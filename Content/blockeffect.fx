@@ -10,7 +10,7 @@ texture Texture;
 sampler2D textureSampler = sampler_state
 {
     Texture = <Texture>;
-    MipFilter = Point;
+    MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
     AddressU = Wrap;
@@ -57,8 +57,8 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
 {
     PixelShaderOutput output = (PixelShaderOutput)0;
     output.Color = tex2D(textureSampler, input.TexureCoordinate);
-
-    output.Color.a *= Alpha;
+        output.Color.a = Alpha;
+   // output.Color.a *= 0.5;
 
     return output;
 }

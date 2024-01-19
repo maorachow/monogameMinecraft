@@ -14,6 +14,7 @@ using System.Diagnostics;
 using monogameMinecraft;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using System.Reflection;
 
 [MessagePackObject]
     public struct Vector2Int : IEquatable<Vector2Int>
@@ -104,7 +105,7 @@ using Microsoft.Xna.Framework.Graphics;
 
     }
     [MessagePackObject]
-    public class Vector3Int : IEquatable<Vector3Int>
+    public struct Vector3Int : IEquatable<Vector3Int>
     {
         [Key(0)]
         public int x;
@@ -254,14 +255,14 @@ using Microsoft.Xna.Framework.Graphics;
         public bool[,,] mapIsSearched;
 
         public bool isModifiedInGame;
-        public void BFSInit(int x, int y, int z, int ignoreSide, int GainedUpdateCount)
+        /* public void BFSInit(int x, int y, int z, int ignoreSide, int GainedUpdateCount)
         {
             updateCount = GainedUpdateCount;
             mapIsSearched = new bool[chunkWidth + 2, chunkHeight + 2, chunkWidth + 2];
             BFSIsWorking = true;
             Task.Run(() => BFSMapUpdate(x, y, z, ignoreSide));
         }
-        public async void BFSMapUpdate(int x, int y, int z, int ignoreSide)
+       public async void BFSMapUpdate(int x, int y, int z, int ignoreSide)
         {
             //left right bottom top back front
             //left x-1 right x+1 top y+1 bottom y-1 back z-1 front z+1
@@ -415,66 +416,9 @@ using Microsoft.Xna.Framework.Graphics;
                 }
             }
 
-        }
-        public void BreakBlockAtPoint(Vector3 blockPoint)
-        {
-
-
-
-            Chunk.SetBlockWithUpdate(blockPoint, 0);
-
-        }
-        public static int GetBlock(Vector3 pos)
-        {
-            Vector3Int intPos = Vector3Int.FloorToIntVec3(pos);
-            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(pos));
-            if (chunkNeededUpdate == null)
-            {
-                return 1;
-            }
-            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
-            if (chunkSpacePos.x >= 0 && chunkSpacePos.x < chunkWidth && chunkSpacePos.y < chunkHeight && chunkSpacePos.y >= 0 && chunkSpacePos.z >= 0 && chunkSpacePos.z < chunkWidth)
-            {
-                return chunkNeededUpdate.map[chunkSpacePos.x, chunkSpacePos.y, chunkSpacePos.z];
-            }
-            else
-            {
-                return 0;
-            }
-
-        }
-        public static int GetBlockLandingPoint(Vector2 pos)
-        {
-            Vector3Int intPos = Vector3Int.FloorToIntVec3(new Vector3(pos.X, 0f, pos.Y));
-            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(new Vector3(pos.X, 0, pos.Y)));
-            if (chunkNeededUpdate == null)
-            {
-                return 100;
-            }
-            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
-
-            for (int i = 250; i > 40; i--)
-            {
-                if (chunkNeededUpdate.map[chunkSpacePos.x, i, chunkSpacePos.z] > 0 && chunkNeededUpdate.map[chunkSpacePos.x, i, chunkSpacePos.z] < 100)
-                {
-                    Debug.WriteLine("get");
-                    return i;
-                }
-                else
-                {
-                    continue;
-                }
-
-            }
-            Debug.WriteLine("noneget2");
-            Debug.WriteLine("noneget");
-            Debug.WriteLine(chunkSpacePos.x + " " + chunkSpacePos.y + " " + chunkSpacePos.z);
-            return 100;
-
-
-
-        }
-        public void SaveSingleChunk()
+        }*/
+        
+    public void SaveSingleChunk()
         {
 
             if (!isModifiedInGame)
@@ -500,17 +444,7 @@ using Microsoft.Xna.Framework.Graphics;
                 ChunkManager.chunkDataReadFromDisk.Add(chunkPos, wd);
             }
         }
-        public static void SetBlockWithUpdate(Vector3 pos, int blockID)
-        {
-
-            Vector3Int intPos = new Vector3Int(ChunkManager.FloatToInt(pos.X), ChunkManager.FloatToInt(pos.Y), ChunkManager.FloatToInt(pos.Z));
-            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(pos));
-
-            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
-            //  chunkNeededUpdate.map[chunkSpacePos.x, chunkSpacePos.y, chunkSpacePos.z] = blockID;
-         //   BlockModifyData b = new BlockModifyData(pos.X, pos.Y, pos.Z, blockID);
-        //    Program.AppendMessage(null, new MessageProtocol(133, MessagePackSerializer.Serialize(b)));
-        }
+        
         public static int[,] GenerateChunkBiomeMap(Vector2Int pos)
         {
             //   float[,] biomeMap=new float[chunkWidth/8+2,chunkWidth/8+2];//插值算法
@@ -591,25 +525,19 @@ using Microsoft.Xna.Framework.Graphics;
 
 
 
-        public void RegenerateMesh()
-        {
-            
-        }
+      
         public async Task InitMap(Vector2Int chunkPos)
         {
             this.chunkPos = chunkPos;
-           
-            if (ChunkManager.chunkDataReadFromDisk.ContainsKey(chunkPos))
-            {
-            isChunkDataSavedInDisk = true;
-            map =   (short[,,])ChunkManager.chunkDataReadFromDisk[chunkPos].map.Clone();
-            GenerateMesh(verticesOpq, verticesNS, verticesWT);
-            return;
-            }
-            map = additiveMap;
+            thisHeightMap = GenerateChunkHeightmap(chunkPos);
+        
+        //    map = additiveMap;
             verticesOpq = new List<VertexPositionNormalTexture>();
             verticesNS = new List<VertexPositionNormalTexture>();
             verticesWT = new List<VertexPositionNormalTexture>();
+            indicesOpq = new List<ushort>();
+            indicesNS = new List<ushort>();
+            indicesWT = new List<ushort>();
             frontChunk = ChunkManager.GetChunk(new Vector2Int(chunkPos.x, chunkPos.y + chunkWidth));
             frontLeftChunk = ChunkManager.GetChunk(new Vector2Int(chunkPos.x - chunkWidth, chunkPos.y + chunkWidth));
             frontRightChunk = ChunkManager.GetChunk(new Vector2Int(chunkPos.x + chunkWidth, chunkPos.y + chunkWidth));
@@ -620,12 +548,23 @@ using Microsoft.Xna.Framework.Graphics;
             leftChunk = ChunkManager.GetChunk(new Vector2Int(chunkPos.x - chunkWidth, chunkPos.y));
             
             rightChunk = ChunkManager.GetChunk(new Vector2Int(chunkPos.x + chunkWidth, chunkPos.y));
+
+          
         if (isMapGenCompleted == true)
         {
-            GenerateMesh(verticesOpq, verticesNS, verticesWT);
+            GenerateMesh(verticesOpq, verticesNS, verticesWT,indicesOpq,indicesNS,indicesWT);
             return;
         }
-            thisHeightMap = GenerateChunkHeightmap(chunkPos);
+        if (ChunkManager.chunkDataReadFromDisk.ContainsKey(chunkPos))
+            {
+            isChunkDataSavedInDisk = true;
+            map =   (short[,,])ChunkManager.chunkDataReadFromDisk[chunkPos].map.Clone();
+            GenerateMesh(verticesOpq, verticesNS, verticesWT, indicesOpq, indicesNS, indicesWT);
+            isMapGenCompleted = true;
+            return;
+            }
+
+           
             if (worldGenType == 1)
             {
                 for (int i = 0; i < chunkWidth; i++)
@@ -638,15 +577,20 @@ using Microsoft.Xna.Framework.Graphics;
                         }
                     }
                 }
-            GenerateMesh(verticesOpq, verticesNS, verticesWT);
-        }
+            isMapGenCompleted = true;
+            GenerateMesh(verticesOpq, verticesNS, verticesWT, indicesOpq, indicesNS, indicesWT);
+            }
             else
             {
                 FreshGenMap(chunkPos);
-            GenerateMesh(verticesOpq, verticesNS, verticesWT);
+            GenerateMesh(verticesOpq, verticesNS, verticesWT, indicesOpq, indicesNS, indicesWT);
             }
             void FreshGenMap(Vector2Int pos)
             {
+            if (isChunkDataSavedInDisk == true)
+            {
+
+            }
                 map = additiveMap;
                 if (worldGenType == 0)
                 {
@@ -745,10 +689,10 @@ using Microsoft.Xna.Framework.Graphics;
                                     break;
                                 }
 
-                                if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] != 0 && map[i, k - 1, j] != 100 && worldRandomGenerator.Next(100) > 80)
-                                {
-                                    map[i, k, j] = 101;
-                                }
+                           //     if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] != 0 && map[i, k - 1, j] != 100 && worldRandomGenerator.Next(100) > 80)
+                           //     {
+                            //        map[i, k, j] = 101;
+                           //     }
                                 if (k < chunkSeaLevel && map[i, k, j] == 0)
                                 {
                                     map[i, k, j] = 100;
@@ -1133,8 +1077,11 @@ using Microsoft.Xna.Framework.Graphics;
 
     public bool isReadyToRender=false;
     public List<VertexPositionNormalTexture> verticesOpq;//= new List<VertexPositionNormalTexture>();
+    public List<ushort> indicesOpq;
     public List<VertexPositionNormalTexture> verticesNS; //= new List<VertexPositionNormalTexture>();
+    public List<ushort> indicesNS;
     public List<VertexPositionNormalTexture> verticesWT;// = new List<VertexPositionNormalTexture>();
+    public List<ushort> indicesWT;
     public BoundingBox chunkBounds;
     // void BuildMesh();
     // void BuildBlocks();
@@ -1145,7 +1092,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 
 
-    public void GenerateMesh(List<VertexPositionNormalTexture> OpqVerts, List<VertexPositionNormalTexture> NSVerts,List<VertexPositionNormalTexture> WTVerts)
+    public void GenerateMesh(List<VertexPositionNormalTexture> OpqVerts, List<VertexPositionNormalTexture> NSVerts,List<VertexPositionNormalTexture> WTVerts,List<ushort> OpqIndices,List<ushort> NSIndices,List<ushort> WTIndices)
     {
         
         int buildFaces =0;
@@ -1171,47 +1118,47 @@ using Microsoft.Xna.Framework.Graphics;
                                  {
                                      //Left
                                      if (CheckNeedBuildFace(x - 1, y, z) && GetChunkBlockType(x - 1, y, z) != 9)
-                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0,1,0),new Vector3(0,0,1), false, OpqVerts,0);
+                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0,1,0),new Vector3(0,0,1), false, OpqVerts,0,OpqIndices);
                                      //Right
                                      if (CheckNeedBuildFace(x + 1, y, z) && GetChunkBlockType(x + 1, y, z) != 9)
-                                         BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0,1,0),new Vector3(0,0,1), true, OpqVerts, 1);
+                                         BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0,1,0),new Vector3(0,0,1), true, OpqVerts, 1, OpqIndices);
 
                                      //Bottom
                                      if (CheckNeedBuildFace(x, y - 1, z) && GetChunkBlockType(x, y - 1, z) != 9)
-                                         BuildFace(typeid, new Vector3(x, y, z),new Vector3(0,0,1), new Vector3(1,0,0), false, OpqVerts ,2);
+                                         BuildFace(typeid, new Vector3(x, y, z),new Vector3(0,0,1), new Vector3(1,0,0), false, OpqVerts ,2, OpqIndices);
                                      //Top
                                      if (CheckNeedBuildFace(x, y + 1, z) && GetChunkBlockType(x, y + 1, z) != 9)
-                                         BuildFace(typeid, new Vector3(x, y + 1, z),new Vector3(0,0,1), new Vector3(1,0,0), true, OpqVerts, 3);
+                                         BuildFace(typeid, new Vector3(x, y + 1, z),new Vector3(0,0,1), new Vector3(1,0,0), true, OpqVerts, 3, OpqIndices);
 
                                      //Back
                                      if (CheckNeedBuildFace(x, y, z - 1) && GetChunkBlockType(x, y, z - 1) != 9)
-                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0,1,0), new Vector3(1,0,0), true, OpqVerts, 4);
+                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0,1,0), new Vector3(1,0,0), true, OpqVerts, 4, OpqIndices);
                                      //Front
                                      if (CheckNeedBuildFace(x, y, z + 1) && GetChunkBlockType(x, y, z + 1) != 9)
-                                         BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0,1,0), new Vector3(1,0,0), false, OpqVerts, 5);
+                                         BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0,1,0), new Vector3(1,0,0), false, OpqVerts, 5, OpqIndices);
 
                                  }
                                  else
                                  {
                                      if (CheckNeedBuildFace(x - 1, y, z))
-                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 1, 0), new Vector3(0, 0, 1), false, OpqVerts, 0);
+                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 1, 0), new Vector3(0, 0, 1), false, OpqVerts, 0, OpqIndices);
                                      //Right
                                      if (CheckNeedBuildFace(x + 1, y, z))
-                                         BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0, 1, 0), new Vector3(0, 0, 1), true, OpqVerts, 1);
+                                         BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0, 1, 0), new Vector3(0, 0, 1), true, OpqVerts, 1, OpqIndices);
 
                                      //Bottom
                                      if (CheckNeedBuildFace(x, y - 1, z))
-                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 0, 1), new Vector3(1, 0, 0), false, OpqVerts, 2);
+                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 0, 1), new Vector3(1, 0, 0), false, OpqVerts, 2, OpqIndices);
                                      //Top
                                      if (CheckNeedBuildFace(x, y + 1, z))
-                                         BuildFace(typeid, new Vector3(x, y + 1, z), new Vector3(0, 0, 1), new Vector3(1, 0, 0), true, OpqVerts, 3);
+                                         BuildFace(typeid, new Vector3(x, y + 1, z), new Vector3(0, 0, 1), new Vector3(1, 0, 0), true, OpqVerts, 3, OpqIndices);
 
                                      //Back
                                      if (CheckNeedBuildFace(x, y, z - 1))
-                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 1, 0), new Vector3(1, 0, 0), true, OpqVerts, 4);
+                                         BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 1, 0), new Vector3(1, 0, 0), true, OpqVerts, 4, OpqIndices);
                                      //Front
                                      if (CheckNeedBuildFace(x, y, z + 1))
-                                         BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0, 1, 0), new Vector3(1, 0, 0), false, OpqVerts, 5);
+                                         BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0, 1, 0), new Vector3(1, 0, 0), false, OpqVerts, 5, OpqIndices);
 
                                  }
 
@@ -1232,7 +1179,7 @@ using Microsoft.Xna.Framework.Graphics;
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
-                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 0.8f, 0f),new Vector3(0,0,1), false,WTVerts, 0);
+                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 0.8f, 0f),new Vector3(0,0,1), false,WTVerts, 0,WTIndices);
 
 
 
@@ -1240,7 +1187,7 @@ using Microsoft.Xna.Framework.Graphics;
                                          }
                                          else
                                          {
-                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 1f, 0f),new Vector3(0,0,1), false, WTVerts, 0);
+                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 1f, 0f),new Vector3(0,0,1), false, WTVerts, 0, WTIndices);
 
 
 
@@ -1256,14 +1203,14 @@ using Microsoft.Xna.Framework.Graphics;
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
-                                             BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0f, 0.8f, 0f),new Vector3(0,0,1), true, WTVerts, 1);
+                                             BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0f, 0.8f, 0f),new Vector3(0,0,1), true, WTVerts, 1, WTIndices);
 
 
 
                                          }
                                          else
                                          {
-                                             BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0f, 1f, 0f),new Vector3(0,0,1), true, WTVerts, 1);
+                                             BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0f, 1f, 0f),new Vector3(0,0,1), true, WTVerts, 1, WTIndices);
 
 
 
@@ -1276,7 +1223,7 @@ using Microsoft.Xna.Framework.Graphics;
                                      //Bottom
                                      if (CheckNeedBuildFace(x, y - 1, z) && GetChunkBlockType(x, y - 1, z) != 100)
                                      {
-                                         BuildFace(typeid, new Vector3(x, y, z),new Vector3(0,0,1), new Vector3(1,0,0), false, WTVerts, 2);
+                                         BuildFace(typeid, new Vector3(x, y, z),new Vector3(0,0,1), new Vector3(1,0,0), false, WTVerts, 2, WTIndices);
 
 
 
@@ -1286,7 +1233,7 @@ using Microsoft.Xna.Framework.Graphics;
                                      //Top
                                      if (CheckNeedBuildFace(x, y + 1, z) && GetChunkBlockType(x, y + 1, z) != 100)
                                      {
-                                         BuildFace(typeid, new Vector3(x, y + 0.8f, z),new Vector3(0,0,1), new Vector3(1,0,0), true, WTVerts, 3);
+                                         BuildFace(typeid, new Vector3(x, y + 0.8f, z),new Vector3(0,0,1), new Vector3(1,0,0), true, WTVerts, 3, WTIndices);
 
 
 
@@ -1301,7 +1248,7 @@ using Microsoft.Xna.Framework.Graphics;
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
-                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 0.8f, 0f), new Vector3(1,0,0), true, WTVerts, 4);
+                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 0.8f, 0f), new Vector3(1,0,0), true, WTVerts, 4, WTIndices);
 
 
 
@@ -1309,7 +1256,7 @@ using Microsoft.Xna.Framework.Graphics;
                                          }
                                          else
                                          {
-                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 1f, 0f), new Vector3(1,0,0), true, WTVerts, 4);
+                                             BuildFace(typeid, new Vector3(x, y, z), new Vector3(0f, 1f, 0f), new Vector3(1,0,0), true, WTVerts, 4, WTIndices);
 
 
 
@@ -1327,13 +1274,13 @@ using Microsoft.Xna.Framework.Graphics;
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
-                                             BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0f, 0.8f, 0f), new Vector3(1,0,0), false, WTVerts, 5);
+                                             BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0f, 0.8f, 0f), new Vector3(1,0,0), false, WTVerts, 5, WTIndices);
 
 
                                          }
                                          else
                                          {
-                                             BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0f, 1f, 0f), new Vector3(1,0,0), false, WTVerts, 4);
+                                             BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0f, 1f, 0f), new Vector3(1,0,0), false, WTVerts, 4, WTIndices);
 
                                          }
 
@@ -1353,7 +1300,7 @@ using Microsoft.Xna.Framework.Graphics;
                                      else
                                      {
                                          Vector3 randomCrossModelOffset = new Vector3(0f, 0f, 0f);
-                                         BuildFace(typeid, new Vector3(x, y, z) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, 1f) + randomCrossModelOffset, false, NSVerts, 0);
+                                         BuildFace(typeid, new Vector3(x, y, z) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, 1f) + randomCrossModelOffset, false, NSVerts, 0,NSIndices);
 
 
 
@@ -1361,7 +1308,7 @@ using Microsoft.Xna.Framework.Graphics;
 
 
 
-                                         BuildFace(typeid, new Vector3(x, y, z + 1f) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, -1f) + randomCrossModelOffset, false, NSVerts, 0);
+                                         BuildFace(typeid, new Vector3(x, y, z + 1f) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, -1f) + randomCrossModelOffset, false, NSVerts, 0, NSIndices);
 
 
 
@@ -1381,17 +1328,20 @@ using Microsoft.Xna.Framework.Graphics;
           verticesOpqArray=verticesOpq.ToArray();
           verticesNSArray=verticesNS.ToArray();
            verticesWTArray=verticesWT.ToArray();
+        indicesOpqArray=indicesOpq.ToArray();
+        indicesNSArray=indicesNS.ToArray();
+        indicesWTArray=indicesWT.ToArray();
         this.chunkBounds = this.CalculateBounds();
         //  Debug.WriteLine(verticesOpq.Count);
 
     }
-    static void BuildFace(int typeid, Vector3 corner, Vector3 up, Vector3 right, bool reversed, List<VertexPositionNormalTexture> verts, int side)
+    static void BuildFace(int typeid, Vector3 corner, Vector3 up, Vector3 right, bool reversed, List<VertexPositionNormalTexture> verts, int side,List<ushort> indices)
     {
         VertexPositionNormalTexture vert00=new VertexPositionNormalTexture();
         VertexPositionNormalTexture vert01 = new VertexPositionNormalTexture();
         VertexPositionNormalTexture vert11 = new VertexPositionNormalTexture();
         VertexPositionNormalTexture vert10 = new VertexPositionNormalTexture();
-      //  int index = verts.Count;
+        short index = (short)verts.Count;
         vert00.Position = corner;
         vert01.Position = corner + up;
         vert11.Position = corner + up + right;
@@ -1422,33 +1372,45 @@ using Microsoft.Xna.Framework.Graphics;
         vert01.Normal = normal;
         vert11.Normal = normal;
         vert10.Normal = normal;
+        verts.Add(vert00);
+        verts.Add(vert01);
+        verts.Add(vert11);
+        verts.Add(vert10);
         if (!reversed)
         {
-            verts.Add(vert00);
-            verts.Add(vert01);
-            verts.Add(vert11);
-            verts.Add(vert11);
-            verts.Add(vert10);
-            verts.Add(vert00);
+            /*  verts.Add(vert00);
+               verts.Add(vert01);
+               verts.Add(vert11);
+               verts.Add(vert11);
+               verts.Add(vert10);
+               verts.Add(vert00);*/
+            indices.Add( (ushort)(index +0));
+            indices.Add((ushort)(index + 1));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 3));
+            indices.Add((ushort)(index + 0));
             //    tris.Add(index + 2);
-          
+
             //   tris.Add(index + 0);
-         
+
         }
         else
         {
-            //     tris.Add(index + 1);
-            //     tris.Add(index + 0);
-            //     tris.Add(index + 2);
-            verts.Add(vert01);
-            verts.Add(vert00);
-            verts.Add(vert11);
-            verts.Add(vert10);
-            verts.Add(vert11);
-            verts.Add(vert00);
-            //     tris.Add(index + 3);
-            //   tris.Add(index + 2);
-            //   tris.Add(index + 0);
+
+            /*    verts.Add(vert01);
+                verts.Add(vert00);
+                verts.Add(vert11);
+                verts.Add(vert10);
+                verts.Add(vert11);
+                verts.Add(vert00);*/
+            //     indices.Add()
+            indices.Add((ushort)(index + 1));
+            indices.Add((ushort)(index + 0));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 3));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 0));
         
         }
 
@@ -1549,6 +1511,9 @@ using Microsoft.Xna.Framework.Graphics;
     public VertexPositionNormalTexture[] verticesOpqArray;
     public VertexPositionNormalTexture[] verticesNSArray;
     public VertexPositionNormalTexture[] verticesWTArray;
+    public ushort[] indicesOpqArray;
+    public ushort[] indicesNSArray;
+    public ushort[] indicesWTArray;
     public int GetHighestPoint()
     {
         int returnValue = 0;
@@ -1569,6 +1534,7 @@ using Microsoft.Xna.Framework.Graphics;
     }
     public async void BuildChunk()
     {
+
        await Task.Run(()=> InitMap(chunkPos));
         //     GenerateMesh(verticesOpq, verticesNS, verticesWT);
         //  Debug.WriteLine(verticesOpqArray.Length);
@@ -1586,5 +1552,11 @@ using Microsoft.Xna.Framework.Graphics;
         this.verticesNS= null;
         this.verticesWT= null;
         this.verticesNSArray= null;
+        this.indicesOpqArray= null;
+        this.indicesNSArray= null;
+        this.indicesWTArray= null;
+        this.indicesOpq  = null;
+        this.indicesNS  = null;
+        this.indicesWT  = null;
     }
     }

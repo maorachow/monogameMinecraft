@@ -21,8 +21,8 @@ namespace monogameMinecraft
     {
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
-       
-        public BasicEffect chunkEffect;
+        public Effect chunkSolidEffect;
+        public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
         public Thread updateWorldThread;
@@ -38,32 +38,35 @@ namespace monogameMinecraft
 
             Window.ClientSizeChanged += OnResize;
            
-            //   this.IsFixedTimeStep = false;
-            //      TargetElapsedTime = System.TimeSpan.FromMilliseconds(0.1);
+               this.IsFixedTimeStep = false;
+               //   TargetElapsedTime = System.TimeSpan.FromMilliseconds(16);
             //this.OnExiting += OnExit;
         }
     
         void OnResize(Object sender, EventArgs e)
         {
-            gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), GraphicsDevice.DisplayMode.AspectRatio, 0.1f, 1000f);
+            float aspectRatio = GraphicsDevice.Viewport.Width / (float)GraphicsDevice.Viewport.Height;
+            gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), aspectRatio, 0.1f, 1000f);
             Debug.WriteLine(GraphicsDevice.Viewport.Width + " " + GraphicsDevice.Viewport.Height);
         }
         protected override void Initialize()
         {
-            gamePlayer = new GamePlayer(new Vector3(-0.5f, 0, -0.5f), new Vector3(0.5f, 1.8f, 0.5f), this);
+            gamePlayer = new GamePlayer(new Vector3(-0.3f, 100, -0.3f), new Vector3(0.3f, 101.8f, 0.3f), this);
             Chunk.biomeNoiseGenerator.SetFrequency(0.002f);
 
             Task t = new Task(() => ChunkManager.ReadJson());
             t.RunSynchronously();
-            chunkEffect = new BasicEffect(GraphicsDevice);
+           
+            chunkNSEffect=new AlphaTestEffect(GraphicsDevice);
             updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread(renderDistance, gamePlayer));
             updateWorldThread.Start();
             tryRemoveChunksThread = new Thread(() => ChunkManager.TryDeleteChunksThread(renderDistance, gamePlayer));
             tryRemoveChunksThread.Start();
             // Chunk c = new Chunk(new Vector2Int(0,0));
-           
-          //  chunkEffect = Content.Load<Effect>("blockeffect");
-            chunkRenderer = new ChunkRenderer(this, chunkEffect, GraphicsDevice);
+            //  chunkSolidEffect = new Effect();
+            chunkSolidEffect = Content.Load<Effect>("blockeffect");
+            //  chunkEffect = Content.Load<Effect>("blockeffect");
+            chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkNSEffect,chunkSolidEffect);
             base.Initialize();
         }
         Texture2D terrainTex;
@@ -71,12 +74,12 @@ namespace monogameMinecraft
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             terrainTex = Content.Load<Texture2D>("terrain");
-            
+            chunkSolidEffect = Content.Load<Effect>("blockeffect");
            // terrainTex.
-            Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
+           Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
             
-            chunkRenderer.atlas = terrainTex;
-           
+           // chunkRenderer.atlas = terrainTex;
+            chunkRenderer.SetTexture(terrainTex);
             // TODO: use this.Content to load your game content here
         }
         int lastMouseX;
@@ -85,8 +88,8 @@ namespace monogameMinecraft
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
-           //     status = GameStatus.Quiting;
-
+                //     status = GameStatus.Quiting;
+                ChunkManager.SaveWorldData();
               //  Exit();
                 Environment.Exit(0);
             }
@@ -94,7 +97,7 @@ namespace monogameMinecraft
 
             // TODO: Add your update logic here
 
-
+            gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
             ProcessPlayerKeyboardInput(gameTime);
             //     Debug.WriteLine(gamePlayer.playerPos);
             //     Debug.WriteLine(gamePlayer.cam.Pitch+" "+ gamePlayer.cam.Yaw);
@@ -109,9 +112,11 @@ namespace monogameMinecraft
             lastMouseY = mState.Y;
             lastMouseX = mState.X;
         }
+         
         void ProcessPlayerKeyboardInput(GameTime gameTime)
         {
             var kState = Keyboard.GetState();
+            var mState = Mouse.GetState();
             Vector3 playerVec = new Vector3(0f, 0f,0f);
             if (kState.IsKeyDown(Keys.W))
             {
@@ -140,7 +145,8 @@ namespace monogameMinecraft
             {
                 playerVec.Y =- 1f;
             }
-            gamePlayer.ProcessPlayerInputs(playerVec, (float)gameTime.ElapsedGameTime.TotalSeconds);
+            gamePlayer.ProcessPlayerInputs(playerVec, (float)gameTime.ElapsedGameTime.TotalSeconds, kState,mState); 
+            ProcessPlayerMouseInput();
         }
         protected override void Draw(GameTime gameTime)
         {
@@ -149,7 +155,7 @@ namespace monogameMinecraft
             
             GraphicsDevice.Clear(Color.CornflowerBlue);
             // Debug.WriteLine(ChunkManager.chunks.Count);
-            ProcessPlayerMouseInput();
+         
             chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
             base.Draw(gameTime);
         }

@@ -9,6 +9,8 @@ using MessagePack;
 using System.IO;
 using System.Threading;
 using System.Collections.Concurrent;
+using System.Diagnostics;
+
 namespace monogameMinecraft
 {
     internal class ChunkManager
@@ -139,14 +141,14 @@ namespace monogameMinecraft
                 }
                 foreach (var c in ChunkManager.chunks)
                 {
-                    if (MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (renderDistance + Chunk.chunkWidth))
+                    if ((MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (renderDistance + Chunk.chunkWidth))&&c.Value.isReadyToRender==true)
                     {
                             // Chunk c2;
                             c.Value.isReadyToRender = false;
-                       c.Value.SaveSingleChunk();
-                         c.Value.Dispose();
-                        ChunkManager.chunks.TryRemove(c);
-                   //     break;
+                            c.Value.SaveSingleChunk();
+                            c.Value.Dispose();
+                            ChunkManager.chunks.TryRemove(c);
+                   //           break;
                       //  c2
                     }
                 
@@ -154,6 +156,124 @@ namespace monogameMinecraft
                
             }
         }
+        public static short GetBlock(Vector3 pos)
+        {
+            Vector3Int intPos = Vector3Int.FloorToIntVec3(pos);
+            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(pos));
+            if (chunkNeededUpdate == null || chunkNeededUpdate.isReadyToRender == false)
+            {
+                return 0;
+            }
+            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
+            if (chunkSpacePos.x >= 0 && chunkSpacePos.x < Chunk.chunkWidth && chunkSpacePos.y < Chunk.chunkHeight && chunkSpacePos.y >= 0 && chunkSpacePos.z >= 0 && chunkSpacePos.z < Chunk.chunkWidth)
+            {
+                return chunkNeededUpdate.map[chunkSpacePos.x, chunkSpacePos.y, chunkSpacePos.z];
+            }
+            else
+            {
+                return 0;
+            }
+
+        }
+        public static short RaycastFirstBlockID(Ray ray,float distance)
+        {
+            for(float i = 0; i < distance; i += 0.1f)
+            {
+                Vector3 blockPoint=ray.origin+ ray.direction*i;
+                short blockID = ChunkManager.GetBlock(blockPoint);
+                if (blockID != 0)
+                {
+                    return blockID; 
+                }
+            }
+            return 0;
+        }
+        public static Vector3 RaycastFirstPosition(Ray ray,float distance)
+        {
+            for (float i = 0; i < distance; i += 0.01f)
+            {
+                Vector3 blockPoint = ray.origin + ray.direction * i;
+                short blockID = ChunkManager.GetBlock(blockPoint);
+                if (blockID != 0)
+                {
+                    return blockPoint;
+                }
+            }
+            return new Vector3(1024, 0, 1024);
+        }
+        public void BreakBlockAtPoint(Vector3 blockPoint)
+        {
+
+
+
+            SetBlockWithUpdate(blockPoint, 0);
+
+        }
+
+        public static int GetBlockLandingPoint(Vector2 pos)
+        {
+            Vector3Int intPos = Vector3Int.FloorToIntVec3(new Vector3(pos.X, 0f, pos.Y));
+            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(new Vector3(pos.X, 0, pos.Y)));
+            if (chunkNeededUpdate == null)
+            {
+                return 100;
+            }
+            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
+
+            for (int i = 250; i > 40; i--)
+            {
+                if (chunkNeededUpdate.map[chunkSpacePos.x, i, chunkSpacePos.z] > 0 && chunkNeededUpdate.map[chunkSpacePos.x, i, chunkSpacePos.z] < 100)
+                {
+                    Debug.WriteLine("get");
+                    return i;
+                }
+                else
+                {
+                    continue;
+                }
+
+            }
+            Debug.WriteLine("noneget2");
+            Debug.WriteLine("noneget");
+            Debug.WriteLine(chunkSpacePos.x + " " + chunkSpacePos.y + " " + chunkSpacePos.z);
+            return 100;
+
+
+
+        }
+        public static void SetBlockWithUpdate(Vector3 pos, short blockID)
+        {
+
+            Vector3Int intPos = new Vector3Int(ChunkManager.FloatToInt(pos.X), ChunkManager.FloatToInt(pos.Y), ChunkManager.FloatToInt(pos.Z));
+            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(pos));
+            if (chunkNeededUpdate == null||chunkNeededUpdate.isReadyToRender==false)
+            {
+                return;
+            }
+            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
+
+                chunkNeededUpdate.map[chunkSpacePos.x, chunkSpacePos.y, chunkSpacePos.z] = blockID;
+                chunkNeededUpdate.BuildChunk();
+                chunkNeededUpdate.isModifiedInGame = true;
+                if (chunkNeededUpdate.rightChunk != null && chunkNeededUpdate.rightChunk.isReadyToRender == true)
+                    
+                chunkNeededUpdate.rightChunk.BuildChunk();
+
+                if (chunkNeededUpdate.leftChunk != null && chunkNeededUpdate.leftChunk.isReadyToRender == true)
+                {
+                    chunkNeededUpdate.leftChunk.BuildChunk();
+                }
+                if (chunkNeededUpdate.frontChunk != null && chunkNeededUpdate.frontChunk.isReadyToRender == true)
+                {
+                    chunkNeededUpdate.frontChunk.BuildChunk();
+                }
+                if (chunkNeededUpdate.backChunk != null && chunkNeededUpdate.backChunk.isReadyToRender == true)
+                {
+                    chunkNeededUpdate.backChunk.BuildChunk();
+                }
+                //   BlockModifyData b = new BlockModifyData(pos.X, pos.Y, pos.Z, blockID);
+                //    Program.AppendMessage(null, new MessageProtocol(133, MessagePackSerializer.Serialize(b)));
+            }
         public static void ReadJson()
         {
             chunkDataReadFromDisk.Clear();

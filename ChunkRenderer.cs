@@ -14,38 +14,40 @@ namespace monogameMinecraft
 
         public MinecraftGame game;
         public GraphicsDevice device;
-        public BasicEffect basicShader;
+      //  public AlphaTestEffect basicNSShader;
+        public Effect basicShader;
         public Texture2D atlas;
         //Dictionary<Vector2Int,Chunk> RenderingChunks
-        public ChunkRenderer(MinecraftGame game, BasicEffect basicShader,GraphicsDevice device)
-        {
-            this.game = game;
-            this.basicShader = basicShader;
-            this.device = device;
-            buffer = new DynamicVertexBuffer(this.device, typeof(VertexPositionNormalTexture),
-                        (int)2e5, BufferUsage.WriteOnly);
-            basicShader.TextureEnabled = true;
-            basicShader.Texture=atlas;
-                 basicShader.EnableDefaultLighting();
-        }
 
-        public ChunkRenderer(MinecraftGame game, GraphicsDevice device, BasicEffect basicShader)
+        public void SetTexture(Texture2D tex)
+        {
+            atlas= tex;
+            basicShader.Parameters["Texture"].SetValue(atlas);
+        }
+        public ChunkRenderer(MinecraftGame game, GraphicsDevice device, AlphaTestEffect basicNSShader,Effect basicSolidShader)
         {
             this.game = game;
             this.device = device;
-            this.basicShader = basicShader;
-            buffer = new DynamicVertexBuffer(this.device, typeof(VertexPositionNormalTexture),(int)2e6, BufferUsage.WriteOnly);
-               basicShader.TextureEnabled = true;
-                basicShader.Texture = atlas;
-                  basicShader.EnableDefaultLighting();
+            this.basicShader = basicSolidShader;
+         //   this.basicNSShader=basicNSShader;
+            buffer = new DynamicVertexBuffer(this.device, typeof(VertexPositionNormalTexture),(int)2e4, BufferUsage.WriteOnly);
+            //  basicSolidShader.TextureEnabled = true;
+            bufferIndex=new DynamicIndexBuffer(this.device,IndexElementSize.SixteenBits,(int)2e5,BufferUsage.WriteOnly);
+            basicNSShader.Texture = atlas;
+            //   basicShader.Texture = atlas;
+         //   basicSolidShader.EnableDefaultLighting();
         }
-
-        public void RenderAllChunks(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks,GamePlayer player)
+        //  List<VertexPositionNormalTexture> allVertices;
+        public void RenderAllChunks(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
+            //  allVertices= new List<VertexPositionNormalTexture>();
+            basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
+            basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
+        //    basicNSShader.View = player.cam.GetViewMatrix();
+        //    basicNSShader.Projection = player.cam.projectionMatrix;
             isBusy = true;
             BoundingFrustum frustum=new BoundingFrustum(player.cam.viewMatrix*player.cam.projectionMatrix);
-            basicShader.View=player.cam.GetViewMatrix();
-            basicShader.Projection=player.cam.projectionMatrix;
+           
             foreach(var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;
@@ -56,51 +58,60 @@ namespace monogameMinecraft
 
                 if(c.isReadyToRender==true)
                 {
+                    
                     if (frustum.Intersects(c.chunkBounds))
-                    {
-                     
-                        RenderSingleChunk(c, player);
+                   {
+                     RenderSingleChunk(c, player);
+                      
                     }
                   
                     
                 }
             }
+
             isBusy = false;
         }
-        DynamicVertexBuffer buffer;
+         DynamicVertexBuffer buffer;
+        DynamicIndexBuffer bufferIndex;
         public static bool isBusy = false;
          void RenderSingleChunk(Chunk c,GamePlayer player)
         {
-           
-            basicShader.World= Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y));
 
+            basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y))) ;
+        //    basicNSShader.World= Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y));
             //Debug.WriteLine("render");
 
-          //  basicShader.Alpha=1.0f;
-            buffer.SetData(c.verticesOpqArray);
+                basicShader.Parameters["Alpha"].SetValue(1.0f);
+                buffer.SetData(c.verticesOpqArray);
                 device.SetVertexBuffer(buffer);
+              
+                bufferIndex.SetData(c.indicesOpqArray);
+                device.Indices = bufferIndex;
                 foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
                 {
                     pass.Apply();
-                    device.DrawPrimitives(PrimitiveType.TriangleList, 0, c.verticesOpqArray.Length / 3);
-                }
-            // Debug.WriteLine(c.verticesWTArray.Length);
-         //   basicShader.Alpha = 0.5f;
+                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0,0, c.indicesOpqArray.Length / 3);
+               }
+           
             if (c.verticesWTArray.Length > 0)
             {
-            buffer.SetData(c.verticesWTArray);
-            device.SetVertexBuffer(buffer);
-            foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
+                buffer.SetData(c.verticesWTArray);
+                device.SetVertexBuffer(buffer);
+                bufferIndex.SetData(c.indicesWTArray);
+                device.Indices = bufferIndex;
+                basicShader.Parameters["Alpha"].SetValue(0.7f);
+                foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
             {
                 pass.Apply();
-                device.DrawPrimitives(PrimitiveType.TriangleList, 0, c.verticesOpqArray.Length / 3);
+                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesWTArray.Length / 3);
+                }
             }
-            }
-        //    basicShader.Alpha = 1f;
-       
-            
-         
-          
+            basicShader.Parameters["Alpha"].SetValue(1.0f);
+            //     basicShader.Alpha = 1f;
+
+
+
+
         }
     }
 }
