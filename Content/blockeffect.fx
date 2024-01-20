@@ -2,7 +2,7 @@ matrix World;
 matrix View;
 matrix Projection;
 
-float Alpha = 1;
+float Alpha;
 float LightIntensity = 1;
 
 texture Texture;
@@ -20,7 +20,7 @@ sampler2D textureSampler = sampler_state
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
-    float Light : NORMAL0;
+    float3 Normal : NORMAL0;
     float2 TexureCoordinate : TEXCOORD0;
     
 };
@@ -28,8 +28,9 @@ struct VertexShaderInput
 struct VertexShaderOutput
 {
     float4 Position : POSITION0;
-    float Light : NORMAL0;
+    float3 Normal :NORMAL0;
     float2 TexureCoordinate : TEXCOORD0;
+    float4 Color:COLOR;
     
 };
 
@@ -45,10 +46,10 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     float4 worldPosition = mul(input.Position, World);
     float4 viewPosition = mul(worldPosition, View);
     output.Position = mul(viewPosition, Projection);
-
+    //if(Alpha<1){output.Position.y=0;}
+    output.Normal=input.Normal;
     output.TexureCoordinate = input.TexureCoordinate;
-        
-  
+      
 
     return output;
 }
@@ -56,9 +57,12 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
 PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
 {
     PixelShaderOutput output = (PixelShaderOutput)0;
+
     output.Color = tex2D(textureSampler, input.TexureCoordinate);
-        output.Color.a = Alpha;
-   // output.Color.a *= 0.5;
+ //   output.Color *= input.Color;
+    output.Color.a =Alpha;
+  //  output.Color.a =0;
+      
 
     return output;
 }

@@ -1117,47 +1117,47 @@ using System.Reflection;
                                  if (typeid == 9)
                                  {
                                      //Left
-                                     if (CheckNeedBuildFace(x - 1, y, z) && GetChunkBlockType(x - 1, y, z) != 9)
+                                     if (CheckNeedBuildFace(x - 1, y, z,false) && GetChunkBlockType(x - 1, y, z) != 9)
                                          BuildFace(typeid, new Vector3(x, y, z), new Vector3(0,1,0),new Vector3(0,0,1), false, OpqVerts,0,OpqIndices);
                                      //Right
-                                     if (CheckNeedBuildFace(x + 1, y, z) && GetChunkBlockType(x + 1, y, z) != 9)
+                                     if (CheckNeedBuildFace(x + 1, y, z, false) && GetChunkBlockType(x + 1, y, z) != 9)
                                          BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0,1,0),new Vector3(0,0,1), true, OpqVerts, 1, OpqIndices);
 
                                      //Bottom
-                                     if (CheckNeedBuildFace(x, y - 1, z) && GetChunkBlockType(x, y - 1, z) != 9)
+                                     if (CheckNeedBuildFace(x, y - 1, z, false) && GetChunkBlockType(x, y - 1, z) != 9)
                                          BuildFace(typeid, new Vector3(x, y, z),new Vector3(0,0,1), new Vector3(1,0,0), false, OpqVerts ,2, OpqIndices);
                                      //Top
-                                     if (CheckNeedBuildFace(x, y + 1, z) && GetChunkBlockType(x, y + 1, z) != 9)
+                                     if (CheckNeedBuildFace(x, y + 1, z, false) && GetChunkBlockType(x, y + 1, z) != 9)
                                          BuildFace(typeid, new Vector3(x, y + 1, z),new Vector3(0,0,1), new Vector3(1,0,0), true, OpqVerts, 3, OpqIndices);
 
                                      //Back
-                                     if (CheckNeedBuildFace(x, y, z - 1) && GetChunkBlockType(x, y, z - 1) != 9)
+                                     if (CheckNeedBuildFace(x, y, z - 1, false) && GetChunkBlockType(x, y, z - 1) != 9)
                                          BuildFace(typeid, new Vector3(x, y, z), new Vector3(0,1,0), new Vector3(1,0,0), true, OpqVerts, 4, OpqIndices);
                                      //Front
-                                     if (CheckNeedBuildFace(x, y, z + 1) && GetChunkBlockType(x, y, z + 1) != 9)
+                                     if (CheckNeedBuildFace(x, y, z + 1, false) && GetChunkBlockType(x, y, z + 1) != 9)
                                          BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0,1,0), new Vector3(1,0,0), false, OpqVerts, 5, OpqIndices);
 
                                  }
                                  else
                                  {
-                                     if (CheckNeedBuildFace(x - 1, y, z))
+                                     if (CheckNeedBuildFace(x - 1, y, z, false))
                                          BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 1, 0), new Vector3(0, 0, 1), false, OpqVerts, 0, OpqIndices);
                                      //Right
-                                     if (CheckNeedBuildFace(x + 1, y, z))
+                                     if (CheckNeedBuildFace(x + 1, y, z, false))
                                          BuildFace(typeid, new Vector3(x + 1, y, z), new Vector3(0, 1, 0), new Vector3(0, 0, 1), true, OpqVerts, 1, OpqIndices);
 
                                      //Bottom
-                                     if (CheckNeedBuildFace(x, y - 1, z))
+                                     if (CheckNeedBuildFace(x, y - 1, z, false))
                                          BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 0, 1), new Vector3(1, 0, 0), false, OpqVerts, 2, OpqIndices);
                                      //Top
-                                     if (CheckNeedBuildFace(x, y + 1, z))
+                                     if (CheckNeedBuildFace(x, y + 1, z, false))
                                          BuildFace(typeid, new Vector3(x, y + 1, z), new Vector3(0, 0, 1), new Vector3(1, 0, 0), true, OpqVerts, 3, OpqIndices);
 
                                      //Back
-                                     if (CheckNeedBuildFace(x, y, z - 1))
+                                     if (CheckNeedBuildFace(x, y, z - 1, false))
                                          BuildFace(typeid, new Vector3(x, y, z), new Vector3(0, 1, 0), new Vector3(1, 0, 0), true, OpqVerts, 4, OpqIndices);
                                      //Front
-                                     if (CheckNeedBuildFace(x, y, z + 1))
+                                     if (CheckNeedBuildFace(x, y, z + 1, false))
                                          BuildFace(typeid, new Vector3(x, y, z + 1), new Vector3(0, 1, 0), new Vector3(1, 0, 0), false, OpqVerts, 5, OpqIndices);
 
                                  }
@@ -1175,7 +1175,7 @@ using System.Reflection;
 
                                      //water
                                      //left
-                                     if (CheckNeedBuildFace(x - 1, y, z) && GetChunkBlockType(x - 1, y, z) != 100)
+                                     if (CheckNeedBuildFace(x - 1, y, z,true) && GetChunkBlockType(x - 1, y, z) != 100)
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
@@ -1199,7 +1199,7 @@ using System.Reflection;
                                      }
 
                                      //Right
-                                     if (CheckNeedBuildFace(x + 1, y, z) && GetChunkBlockType(x + 1, y, z) != 100)
+                                     if (CheckNeedBuildFace(x + 1, y, z, true) && GetChunkBlockType(x + 1, y, z) != 100)
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
@@ -1221,7 +1221,7 @@ using System.Reflection;
 
 
                                      //Bottom
-                                     if (CheckNeedBuildFace(x, y - 1, z) && GetChunkBlockType(x, y - 1, z) != 100)
+                                     if (CheckNeedBuildFace(x, y - 1, z, true) && GetChunkBlockType(x, y - 1, z) != 100)
                                      {
                                          BuildFace(typeid, new Vector3(x, y, z),new Vector3(0,0,1), new Vector3(1,0,0), false, WTVerts, 2, WTIndices);
 
@@ -1231,7 +1231,7 @@ using System.Reflection;
                                      }
 
                                      //Top
-                                     if (CheckNeedBuildFace(x, y + 1, z) && GetChunkBlockType(x, y + 1, z) != 100)
+                                     if (CheckNeedBuildFace(x, y + 1, z, true) && GetChunkBlockType(x, y + 1, z) != 100)
                                      {
                                          BuildFace(typeid, new Vector3(x, y + 0.8f, z),new Vector3(0,0,1), new Vector3(1,0,0), true, WTVerts, 3, WTIndices);
 
@@ -1244,7 +1244,7 @@ using System.Reflection;
 
 
                                      //Back
-                                     if (CheckNeedBuildFace(x, y, z - 1) && GetChunkBlockType(x, y, z - 1) != 100)
+                                     if (CheckNeedBuildFace(x, y, z - 1, true) && GetChunkBlockType(x, y, z - 1) != 100)
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
@@ -1270,7 +1270,7 @@ using System.Reflection;
 
 
                                      //Front
-                                     if (CheckNeedBuildFace(x, y, z + 1) && GetChunkBlockType(x, y, z + 1) != 100)
+                                     if (CheckNeedBuildFace(x, y, z + 1, true) && GetChunkBlockType(x, y, z + 1) != 100)
                                      {
                                          if (GetChunkBlockType(x, y + 1, z) != 100)
                                          {
@@ -1417,12 +1417,26 @@ using System.Reflection;
     }
 
 
-    bool CheckNeedBuildFace(int x, int y, int z)
+    bool CheckNeedBuildFace(int x, int y, int z,bool isThisNS)
     {
        // return true;
         if (y < 0) return false;
         var type = GetChunkBlockType(x, y, z);
         bool isNonSolid = false;
+        if (isThisNS == true)
+        {
+            switch (type)
+            {
+                case 100:
+             //       Debug.WriteLine("true");
+                    return false;
+                case 0:
+                    return true;
+                default: return false;
+            }
+        }
+        else
+        {
         if (type < 200 && type >= 100)
         {
             isNonSolid = true;
@@ -1432,6 +1446,9 @@ using System.Reflection;
             case true: return true;
             case false: break;
         }
+        }
+      
+       
         switch (type)
         {
 

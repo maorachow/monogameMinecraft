@@ -29,7 +29,9 @@ namespace monogameMinecraft
             this.game = game;
             this.device = device;
             this.basicShader = basicSolidShader;
-         //   this.basicNSShader=basicNSShader;
+            device.BlendState = BlendState.NonPremultiplied;
+            device.DepthStencilState = DepthStencilState.Default;
+            //   this.basicNSShader=basicNSShader;
             buffer = new DynamicVertexBuffer(this.device, typeof(VertexPositionNormalTexture),(int)2e4, BufferUsage.WriteOnly);
             //  basicSolidShader.TextureEnabled = true;
             bufferIndex=new DynamicIndexBuffer(this.device,IndexElementSize.SixteenBits,(int)2e5,BufferUsage.WriteOnly);
@@ -60,26 +62,66 @@ namespace monogameMinecraft
                 {
                     
                     if (frustum.Intersects(c.chunkBounds))
-                   {
-                     RenderSingleChunk(c, player);
+                    {
+                     RenderSingleChunkOpq(c, player);
                       
                     }
                   
                     
                 }
             }
+            foreach (var chunk in RenderingChunks)
+            {
+                Chunk c = chunk.Value;
+                if (c == null)
+                {
+                    continue;
+                }
+
+                if (c.isReadyToRender == true)
+                {
+
+                    if (frustum.Intersects(c.chunkBounds))
+                    {
+                        RenderSingleChunkTransparent(c, player);
+
+                    }
+
+
+                }
+            }
+
 
             isBusy = false;
         }
          DynamicVertexBuffer buffer;
         DynamicIndexBuffer bufferIndex;
         public static bool isBusy = false;
-         void RenderSingleChunk(Chunk c,GamePlayer player)
+        void RenderSingleChunkTransparent(Chunk c, GamePlayer player)
+        {
+            basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
+            if (c.verticesWTArray.Length > 0)
+            {
+                buffer.SetData(c.verticesWTArray);
+                device.SetVertexBuffer(buffer);
+                bufferIndex.SetData(c.indicesWTArray);
+                device.Indices = bufferIndex;
+                basicShader.Parameters["Alpha"].SetValue(0.7f);
+                foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesWTArray.Length / 3);
+                }
+            }
+        }
+         void RenderSingleChunkOpq(Chunk c,GamePlayer player)
         {
 
             basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y))) ;
         //    basicNSShader.World= Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y));
             //Debug.WriteLine("render");
+
+         
 
                 basicShader.Parameters["Alpha"].SetValue(1.0f);
                 buffer.SetData(c.verticesOpqArray);
@@ -92,22 +134,14 @@ namespace monogameMinecraft
                     pass.Apply();
                     device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0,0, c.indicesOpqArray.Length / 3);
                }
-           
-            if (c.verticesWTArray.Length > 0)
-            {
-                buffer.SetData(c.verticesWTArray);
-                device.SetVertexBuffer(buffer);
-                bufferIndex.SetData(c.indicesWTArray);
-                device.Indices = bufferIndex;
-                basicShader.Parameters["Alpha"].SetValue(0.7f);
-                foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
-            {
-                pass.Apply();
-                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesWTArray.Length / 3);
-                }
-            }
-            basicShader.Parameters["Alpha"].SetValue(1.0f);
-            //     basicShader.Alpha = 1f;
+       //     device.DepthStencilState  =DepthStencilState.None;
+              
+         //   device.DepthStencilState = DepthStencilState.Default;
+            //   device.DepthStencilState = DepthStencilState.None;
+
+            //    device.DepthStencilState = DepthStencilState.Default;
+            //  basicShader.Parameters["Alpha"].SetValue(1.0f);
+            //  basicShader.Alpha = 1f;
 
 
 

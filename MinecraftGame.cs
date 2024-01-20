@@ -3,24 +3,27 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System.Net.Mime;
 using System.Reflection;
-using MonoGame.Extended.Screens;
+using MonoGame.Extended;
 using MonoGame.Extended.Screens.Transitions;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using monogameMinecraft;
 using System.Threading;
+using System.Collections.Generic;
+
 namespace monogameMinecraft
 {
     public enum GameStatus
     {
+        Menu,
         Started,
         Quiting
     }
     public class MinecraftGame : Game
     {
         private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
+        public SpriteBatch _spriteBatch;
         public Effect chunkSolidEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
@@ -29,6 +32,8 @@ namespace monogameMinecraft
         public Thread tryRemoveChunksThread;
         public int renderDistance=128;
         public GameStatus status;
+         
+        
         public MinecraftGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -37,7 +42,7 @@ namespace monogameMinecraft
             Window.AllowUserResizing = true;
 
             Window.ClientSizeChanged += OnResize;
-           
+            
                this.IsFixedTimeStep = false;
                //   TargetElapsedTime = System.TimeSpan.FromMilliseconds(16);
             //this.OnExiting += OnExit;
@@ -45,60 +50,117 @@ namespace monogameMinecraft
     
         void OnResize(Object sender, EventArgs e)
         {
-            float aspectRatio = GraphicsDevice.Viewport.Width / (float)GraphicsDevice.Viewport.Height;
-            gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), aspectRatio, 0.1f, 1000f);
+            UIElement.ScreenRect = this.Window.ClientBounds;
+            foreach (UIElement element in UIElement.menuUIs )
+            {
+                element.OnResize();
+            }
+            switch (status)
+            {
+                case GameStatus.Started:
+                    float aspectRatio = GraphicsDevice.Viewport.Width / (float)GraphicsDevice.Viewport.Height;
+                    gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), aspectRatio, 0.1f, 1000f);
+                    break;
+            }
+          //  button.OnResize();
+            
+            
+            
             Debug.WriteLine(GraphicsDevice.Viewport.Width + " " + GraphicsDevice.Viewport.Height);
         }
-        protected override void Initialize()
+        public void InitGameplay()
         {
             gamePlayer = new GamePlayer(new Vector3(-0.3f, 100, -0.3f), new Vector3(0.3f, 101.8f, 0.3f), this);
+            
             Chunk.biomeNoiseGenerator.SetFrequency(0.002f);
-
-            Task t = new Task(() => ChunkManager.ReadJson());
-            t.RunSynchronously();
-           
+          ChunkManager.ReadJson();
+      
             chunkNSEffect=new AlphaTestEffect(GraphicsDevice);
-            updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread(renderDistance, gamePlayer));
+            updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread(renderDistance, gamePlayer,this));
             updateWorldThread.Start();
-            tryRemoveChunksThread = new Thread(() => ChunkManager.TryDeleteChunksThread(renderDistance, gamePlayer));
+            tryRemoveChunksThread = new Thread(() => ChunkManager.TryDeleteChunksThread(renderDistance, gamePlayer, this));
             tryRemoveChunksThread.Start();
-            // Chunk c = new Chunk(new Vector2Int(0,0));
-            //  chunkSolidEffect = new Effect();
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
             //  chunkEffect = Content.Load<Effect>("blockeffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkNSEffect,chunkSolidEffect);
+            chunkRenderer.SetTexture(terrainTex);
+            GamePlayer.ReadPlayerData(gamePlayer,this);
+            status = GameStatus.Started;
+        }
+        void QuitGameplay()
+        {
+            status = GameStatus.Quiting;
+            ChunkManager.SaveWorldData();
+            GamePlayer.SavePlayerData(gamePlayer);
+            ChunkManager.chunks.Clear();
+            ChunkManager.chunkDataReadFromDisk.Clear();
+
+            
+           // updateWorldThread.Abort();
+         //   tryRemoveChunksThread.Abort();
+        }
+        SpriteFont sf;
+        protected override void Initialize()
+        {
+            
+
+             _spriteBatch = new SpriteBatch(GraphicsDevice);
+          //  InitGameplay();
+        //    sf = Content.Load<SpriteFont>("defaultfont");
+            UIUtility.InitMenuUI(this);
+            // Chunk c = new Chunk(new Vector2Int(0,0));
+            //  chunkSolidEffect = new Effect();
+
             base.Initialize();
         }
         Texture2D terrainTex;
         protected override void LoadContent()
         {
-            _spriteBatch = new SpriteBatch(GraphicsDevice);
+           
+            
             terrainTex = Content.Load<Texture2D>("terrain");
+            
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
            // terrainTex.
-           Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
-            
+    //       Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
+         //   button = new UIButton(new Vector2(0.1f, 0.1f), 0.3f, 0.2f, terrainTex, new Vector2(0.15f, 0.15f), sf, _spriteBatch,this.Window);
            // chunkRenderer.atlas = terrainTex;
-            chunkRenderer.SetTexture(terrainTex);
+           
             // TODO: use this.Content to load your game content here
         }
         int lastMouseX;
         int lastMouseY;
         protected override void Update(GameTime gameTime)
         {
+            switch (status)
+            {
+                case GameStatus.Menu:
+                    foreach(var el in UIElement.menuUIs)
+                    {
+                        el.Update();
+                    }
+                    break;
+                case GameStatus.Started:
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
                 //     status = GameStatus.Quiting;
-                ChunkManager.SaveWorldData();
+                QuitGameplay();
               //  Exit();
                 Environment.Exit(0);
             }
 
 
             // TODO: Add your update logic here
-
+           
             gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
             ProcessPlayerKeyboardInput(gameTime);
+
+
+                    break;
+            }
+          
+            
             //     Debug.WriteLine(gamePlayer.playerPos);
             //     Debug.WriteLine(gamePlayer.cam.Pitch+" "+ gamePlayer.cam.Yaw);
             //    Debug.WriteLine(gamePlayer.cam.position + " " + gamePlayer.cam.front+" "+gamePlayer.cam.up);
@@ -152,11 +214,31 @@ namespace monogameMinecraft
         {
 
 
-            
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            switch (status)
+            {
+                case GameStatus.Started:
+                    Debug.WriteLine("started");
+                GraphicsDevice.Clear(Color.CornflowerBlue);
             // Debug.WriteLine(ChunkManager.chunks.Count);
          
-            chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
+                GraphicsDevice.DepthStencilState= DepthStencilState.Default;
+                chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
+
+                    break;
+                    case GameStatus.Menu:
+                    GraphicsDevice.Clear(Color.CornflowerBlue);
+                    _spriteBatch.Begin(samplerState:SamplerState.PointWrap);
+
+                    foreach (var el in UIElement.menuUIs)
+                    {
+                        el.DrawString(el.text);
+                    }
+                         _spriteBatch.End();
+                    break;
+
+            }
+           
+        //    _
             base.Draw(gameTime);
         }
     }

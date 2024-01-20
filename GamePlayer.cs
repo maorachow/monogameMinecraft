@@ -2,10 +2,12 @@
 using System.Collections.Generic;
 using System.Data.SqlTypes;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using MessagePack;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -18,14 +20,106 @@ namespace monogameMinecraft
         BoundingBox playerBounds;
         public Vector3 playerPos;
         public float moveVelocity=5f;
-        float fastPlayerSpeed = 10f;
+        float fastPlayerSpeed =20f;
         float slowPlayerSpeed = 5f;
         public bool isLanded=false;
+        int currentSelectedHotbar = 0;
+        short[] inventoryData = new short[9];
+        public static bool isPlayerDataSaved = false;
+        public static void ReadPlayerData(GamePlayer player,Game game)
+        {
+       
+            //   gameWorldDataPath = WorldManager.gameWorldDataPath;
+
+            if (!Directory.Exists(ChunkManager.gameWorldDataPath + "unityMinecraftServerData"))
+            {
+                Directory.CreateDirectory(ChunkManager.gameWorldDataPath + "unityMinecraftServerData");
+
+            }
+            if (!Directory.Exists(ChunkManager.gameWorldDataPath + "unityMinecraftServerData/GameData"))
+            {
+                Directory.CreateDirectory(ChunkManager.gameWorldDataPath + "unityMinecraftServerData/GameData");
+            }
+
+            if (!File.Exists(ChunkManager.gameWorldDataPath + "unityMinecraftServerData" + "/GameData/player.json"))
+            {
+                FileStream fs = File.Create(ChunkManager.gameWorldDataPath + "unityMinecraftServerData" + "/GameData/player.json");
+                fs.Close();
+            }
+
+            byte[] playerDataBytes = File.ReadAllBytes(ChunkManager.gameWorldDataPath + "unityMinecraftServerData/GameData/player.json");
+            /*  List<ChunkData> tmpList = new List<ChunkData>();
+              foreach (string s in worldData)
+              {
+                  ChunkData tmp = JsonConvert.DeserializeObject<ChunkData>(s);
+                  tmpList.Add(tmp);
+              }
+              foreach (ChunkData w in tmpList)
+              {
+                  chunkDataReadFromDisk.Add(new Vector2Int(w.chunkPos.x, w.chunkPos.y), w);
+              }*/
+            if (playerDataBytes.Length > 0)
+            {
+                PlayerData playerData = MessagePackSerializer.Deserialize<PlayerData>(playerDataBytes);
+              //  Debug.WriteLine(playerData.posX);
+                player.SetBoundPosition(new Vector3(playerData.posX, playerData.posY, playerData.posZ)+new Vector3(0f,0.3f,0f));
+                player.inventoryData=(short[])playerData.inventoryData.Clone();
+                player.GetBlocksAround(player.playerBounds);
+            }
+
+        //    isJsonReadFromDisk = true;
+        }
+        void SetBoundPosition(Vector3 pos)
+        {
+            playerBounds.Max = pos + new Vector3(playerWidth / 2f, playerHeight / 2f, playerWidth / 2f);
+            playerBounds.Min = pos - new Vector3(playerWidth / 2f, playerHeight / 2f, playerWidth / 2f);
+        }
+        public static void SavePlayerData(GamePlayer player)
+        {
+
+            //   gameWorldDataPath = WorldManager.gameWorldDataPath;
+
+            if (!Directory.Exists(ChunkManager.gameWorldDataPath + "unityMinecraftServerData"))
+            {
+                Directory.CreateDirectory(ChunkManager.gameWorldDataPath + "unityMinecraftServerData");
+
+            }
+            if (!Directory.Exists(ChunkManager.gameWorldDataPath + "unityMinecraftServerData/GameData"))
+            {
+                Directory.CreateDirectory(ChunkManager.gameWorldDataPath + "unityMinecraftServerData/GameData");
+            }
+
+            if (!File.Exists(ChunkManager.gameWorldDataPath + "unityMinecraftServerData" + "/GameData/player.json"))
+            {
+                FileStream fs = File.Create(ChunkManager.gameWorldDataPath + "unityMinecraftServerData" + "/GameData/player.json");
+                fs.Close();
+            }
+
+            byte[] playerDataBytes = MessagePackSerializer.Serialize(new PlayerData(player.playerPos.X, player.playerPos.Y, player.playerPos.Z,player.inventoryData));
+            Debug.WriteLine(playerDataBytes.Length);
+            File.WriteAllBytes(ChunkManager.gameWorldDataPath + "unityMinecraftServerData/GameData/player.json", playerDataBytes);
+            isPlayerDataSaved = true;
+            /*  List<ChunkData> tmpList = new List<ChunkData>();
+              foreach (string s in worldData)
+              {
+                  ChunkData tmp = JsonConvert.DeserializeObject<ChunkData>(s);
+                  tmpList.Add(tmp);
+              }
+              foreach (ChunkData w in tmpList)
+              {
+                  chunkDataReadFromDisk.Add(new Vector2Int(w.chunkPos.x, w.chunkPos.y), w);
+              }*/
+        
+
+            //    isJsonReadFromDisk = true;
+        }
+        public static float playerWidth=0.6f;
+        public static float playerHeight =1.8f;
         public Vector3 GetBoundingBoxCenter(BoundingBox box)
         {
             return (box.Max + box.Min) / 2f;
         }
-      public GamePlayer(Vector3 min, Vector3 max,Game game)
+        public GamePlayer(Vector3 min, Vector3 max,Game game)
         {
             playerBounds = new BoundingBox(min, max);
             playerPos=GetBoundingBoxCenter(playerBounds);
@@ -99,7 +193,7 @@ namespace monogameMinecraft
 
                 playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds, 0, dy, 0);
            
-                if (movY != dy)
+                if (movY != dy&&movY<0)
                 {
                 isLanded = true;
                 //     curGravity = 0f;
@@ -207,7 +301,7 @@ namespace monogameMinecraft
                 {
                    
                     Jump();
-                    jumpCD = 0.01f;
+               //     jumpCD = 0.01f;
                 }
 
             }
