@@ -32,7 +32,7 @@ namespace monogameMinecraft
             
             
             this.spriteBatch = sb;
-            
+            OnResize();
         }
         public void OnResize()
         {

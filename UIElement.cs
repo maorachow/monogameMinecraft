@@ -12,7 +12,8 @@ namespace monogameMinecraft
     public interface UIElement
     {
         public static Dictionary<string, Texture2D> UITextures = new Dictionary<string, Texture2D>();
-        public static Rectangle ScreenRect;
+        public static Rectangle ScreenRect = new Rectangle(0, 0, 800, 480);
+        public static Rectangle ScreenRectInital=new Rectangle(0,0,800,480);
         public void GetScreenSpaceRect();
         public void Draw();
         public void DrawString(string text);
@@ -20,5 +21,6 @@ namespace monogameMinecraft
         public void OnResize();
         public string text {get;set;}
         public static List<UIElement> menuUIs = new List<UIElement>();
+        public static List<UIElement> inGameUIs = new List<UIElement>();
     }
 }

@@ -66,7 +66,7 @@ namespace monogameMinecraft
             //  mainForm.LogOnTextbox(value.x+" "+value.y+"\n");
             return value;
         }
-        public static bool isJsonReadFromDisk { get; private set; }
+        public static bool isJsonReadFromDisk { get;  set; }
         public static bool isWorldDataSaved { get; private set; }
         public static string gameWorldDataPath = AppDomain.CurrentDomain.BaseDirectory;
 
@@ -112,11 +112,11 @@ namespace monogameMinecraft
             BoundingFrustum frustum;
             while (true)
             {
-                if (game.status == GameStatus.Quiting)
+                if (game.status == GameStatus.Quiting || game.status == GameStatus.Menu)
                 {
                     return;
                 }
-                Thread.Sleep(100);
+                Thread.Sleep(50);
                  frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
                 for(float x = player.playerPos.X - renderDistance; x < player.playerPos.X + renderDistance; x += Chunk.chunkWidth)
                 {
@@ -127,7 +127,8 @@ namespace monogameMinecraft
                             BoundingBox chunkBoundingBox = new BoundingBox(new Vector3(chunkPos.x, 0, chunkPos.y), new Vector3(chunkPos.x + Chunk.chunkWidth, Chunk.chunkHeight, chunkPos.y + Chunk.chunkWidth));
                             if (frustum.Intersects(chunkBoundingBox))
                             {
-                                Chunk c = new Chunk(chunkPos);
+                                Chunk c = new Chunk(chunkPos, game.GraphicsDevice);
+                                break;
                             }
                             else continue;
                                
@@ -143,7 +144,7 @@ namespace monogameMinecraft
         {
             while (true) {
 
-                if (game.status == GameStatus.Quiting)
+                if (game.status == GameStatus.Quiting||game.status==GameStatus.Menu)
                 {
                     return;
                 }
@@ -160,7 +161,8 @@ namespace monogameMinecraft
                             // Chunk c2;
                             c.Value.isReadyToRender = false;
                             c.Value.SaveSingleChunk();
-                            c.Value.Dispose();
+                         //   c.Value.Dispose();
+                       
                             ChunkManager.chunks.TryRemove(c);
                    //           break;
                       //  c2
@@ -174,7 +176,7 @@ namespace monogameMinecraft
         {
             Vector3Int intPos = Vector3Int.FloorToIntVec3(pos);
             Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(pos));
-            if (chunkNeededUpdate == null || chunkNeededUpdate.isReadyToRender == false)
+            if (chunkNeededUpdate == null || chunkNeededUpdate.isMapGenCompleted == false)
             {
                 return 1;
             }
@@ -269,19 +271,19 @@ namespace monogameMinecraft
                 chunkNeededUpdate.map[chunkSpacePos.x, chunkSpacePos.y, chunkSpacePos.z] = blockID;
                 chunkNeededUpdate.BuildChunk();
                 chunkNeededUpdate.isModifiedInGame = true;
-                if (chunkNeededUpdate.rightChunk != null && chunkNeededUpdate.rightChunk.isReadyToRender == true)
+                if (chunkNeededUpdate.rightChunk != null && chunkNeededUpdate.rightChunk.isMapGenCompleted == true)
                     
                 chunkNeededUpdate.rightChunk.BuildChunk();
 
-                if (chunkNeededUpdate.leftChunk != null && chunkNeededUpdate.leftChunk.isReadyToRender == true)
+                if (chunkNeededUpdate.leftChunk != null && chunkNeededUpdate.leftChunk.isMapGenCompleted == true)
                 {
                     chunkNeededUpdate.leftChunk.BuildChunk();
                 }
-                if (chunkNeededUpdate.frontChunk != null && chunkNeededUpdate.frontChunk.isReadyToRender == true)
+                if (chunkNeededUpdate.frontChunk != null && chunkNeededUpdate.frontChunk.isMapGenCompleted == true)
                 {
                     chunkNeededUpdate.frontChunk.BuildChunk();
                 }
-                if (chunkNeededUpdate.backChunk != null && chunkNeededUpdate.backChunk.isReadyToRender == true)
+                if (chunkNeededUpdate.backChunk != null && chunkNeededUpdate.backChunk.isMapGenCompleted == true)
                 {
                     chunkNeededUpdate.backChunk.BuildChunk();
                 }

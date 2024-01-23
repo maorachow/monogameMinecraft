@@ -15,6 +15,7 @@ using monogameMinecraft;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Reflection;
+using System.Net.Http.Headers;
 
 [MessagePackObject]
     public struct Vector2Int : IEquatable<Vector2Int>
@@ -171,16 +172,31 @@ using System.Reflection;
         }
 
     }
-    public struct RandomGenerator3D
+public struct RandomGenerator3D
+{
+    //  public System.Random rand=new System.Random(0);
+    public static FastNoise randomNoiseGenerator = new FastNoise();
+    public static bool initNoiseGen = InitNoiseGenerator();
+    public static bool InitNoiseGenerator()
     {
-        //  public System.Random rand=new System.Random(0);
-        public static int GenerateIntFromVec3(Vector3Int pos)
-        {
-            System.Random rand = new System.Random(pos.x * pos.y * pos.z * 100);
-            return rand.Next(100);
-        }
+        //  randomNoiseGenerator.SetSeed(0);
+        randomNoiseGenerator.SetNoiseType(FastNoise.NoiseType.Value);
+        randomNoiseGenerator.SetFrequency(100f);
+        return true;
+        // randomNoiseGenerator.SetFractalType(FastNoise.FractalType.None);
     }
-    [MessagePackObject]
+    public static int GenerateIntFromVec3(Vector3Int pos)
+    {
+        float value = randomNoiseGenerator.GetSimplex(pos.x * 2f, pos.y * 2f, pos.z * 2f);
+        value += 1f;
+        int finalValue = (int)(value * 53f);
+        finalValue = MathHelper.Clamp(finalValue, 0, 100);
+        //   Debug.Log(finalValue);
+        //   System.Random rand=new System.Random(pos.x*pos.y*pos.z*100);
+        return finalValue;
+    }
+}
+[MessagePackObject]
     public class Chunk:IDisposable
     {
         [IgnoreMember]
@@ -201,8 +217,10 @@ using System.Reflection;
         public Vector2Int chunkPos = new Vector2Int(0, 0);
         [IgnoreMember]
         public bool isChunkDataSavedInDisk = false;
-        public Chunk(Vector2Int chunkPos)
+        public GraphicsDevice device;
+        public Chunk(Vector2Int chunkPos, GraphicsDevice device)
         {
+            this.device= device;
             this.chunkPos = chunkPos;
             ChunkManager.chunks.TryAdd(chunkPos, this);
             isReadyToRender = false;
@@ -215,7 +233,7 @@ using System.Reflection;
  {3, new List<Vector2> { new Vector2(0.125f, 0f), new Vector2(0.125f, 0f), new Vector2(0.125f, 0f), new Vector2(0.125f, 0f), new Vector2(0.125f, 0f), new Vector2(0.125f, 0f) }},
  {4, new List<Vector2> { new Vector2(0.1875f, 0f), new Vector2(0.1875f, 0f), new Vector2(0.125f, 0f), new Vector2(0.0625f, 0f), new Vector2(0.1875f, 0f), new Vector2(0.1875f, 0f) }},
  {100, new List<Vector2> { new Vector2(0f, 0.0625f), new Vector2(0f, 0.0625f), new Vector2(0f, 0.0625f), new Vector2(0f, 0.0625f), new Vector2(0f, 0.0625f), new Vector2(0f, 0.0625f) }},
- {101, new List<Vector2> { new Vector2(0f, 0.0625f) } },
+ {101, new List<Vector2> { new Vector2(0.0625f, 0.0625f) } },
  {5, new List<Vector2> { new Vector2(0.375f, 0f), new Vector2(0.375f, 0f), new Vector2(0.375f, 0f), new Vector2(0.375f, 0f), new Vector2(0.375f, 0f), new Vector2(0.375f, 0f) }},
  {6, new List<Vector2> { new Vector2(0.25f, 0f), new Vector2(0.25f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f) }},
  {7, new List<Vector2> { new Vector2(0.3125f, 0f), new Vector2(0.3125f, 0f), new Vector2(0.25f, 0f), new Vector2(0.25f, 0f), new Vector2(0.3125f, 0f), new Vector2(0.3125f, 0f) }},
@@ -524,10 +542,12 @@ using System.Reflection;
         }
 
 
-
-      
+        public object taskLock=new object();
+        
         public async Task InitMap(Vector2Int chunkPos)
         {
+            lock (taskLock)
+            {
             this.chunkPos = chunkPos;
             thisHeightMap = GenerateChunkHeightmap(chunkPos);
         
@@ -585,6 +605,9 @@ using System.Reflection;
                 FreshGenMap(chunkPos);
             GenerateMesh(verticesOpq, verticesNS, verticesWT, indicesOpq, indicesNS, indicesWT);
             }
+            }
+             
+           
             void FreshGenMap(Vector2Int pos)
             {
             if (isChunkDataSavedInDisk == true)
@@ -683,16 +706,13 @@ using System.Reflection;
                             for (int k = chunkHeight - 1; k >= 0; k--)
                             {
 
-                                if (map[i, k, j] != 0 && k >= chunkSeaLevel)
+                                if (map[i, k, j] ==3 && k >= chunkSeaLevel-1)
                                 {
                                     map[i, k, j] = 4;
                                     break;
                                 }
 
-                           //     if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] != 0 && map[i, k - 1, j] != 100 && worldRandomGenerator.Next(100) > 80)
-                           //     {
-                            //        map[i, k, j] = 101;
-                           //     }
+                              
                                 if (k < chunkSeaLevel && map[i, k, j] == 0)
                                 {
                                     map[i, k, j] = 100;
@@ -709,13 +729,16 @@ using System.Reflection;
 
                             for (int k = chunkHeight - 1; k >= 0; k--)
                             {
-
+                            if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] ==4  &&RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i,k,j))>80)
+                                {
+                                    map[i, k, j] = 101;
+                               }
                                 if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] == 4 && map[i, k - 1, j] != 100)
                                 {
                                     if (treeCount > 0)
                                     {
-                                        //         Console.WriteLine(RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)));
-                                        if (RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)) > 98)
+                                                 //Debug.WriteLine(RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)));
+                                        if (RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)+new Vector3Int(chunkPos.x,0,chunkPos.y)) > 98)
                                         {
 
 
@@ -753,7 +776,7 @@ using System.Reflection;
 
                                                                         isBackLeftChunkUpdated = true;
 
-                                                                        //    WorldManager.chunkLoadingQueue.UpdatePriority(backLeftChunk,0);
+                                                                        //    WorldManage r.chunkLoadingQueue.UpdatePriority(backLeftChunk,0);
                                                                         //               backLeftChunk.isChunkMapUpdated=true;
                                                                     }
 
@@ -1094,8 +1117,8 @@ using System.Reflection;
 
     public void GenerateMesh(List<VertexPositionNormalTexture> OpqVerts, List<VertexPositionNormalTexture> NSVerts,List<VertexPositionNormalTexture> WTVerts,List<ushort> OpqIndices,List<ushort> NSIndices,List<ushort> WTIndices)
     {
-        
-        int buildFaces =0;
+
+     
         for (int x = 0; x < chunkWidth; x++)
         {
            
@@ -1301,20 +1324,20 @@ using System.Reflection;
                                      {
                                          Vector3 randomCrossModelOffset = new Vector3(0f, 0f, 0f);
                                          BuildFace(typeid, new Vector3(x, y, z) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, 1f) + randomCrossModelOffset, false, NSVerts, 0,NSIndices);
+                                        BuildFace(typeid, new Vector3(x, y, z) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, 1f) + randomCrossModelOffset, true, NSVerts, 0, NSIndices);
 
 
 
 
 
 
-
-                                         BuildFace(typeid, new Vector3(x, y, z + 1f) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, -1f) + randomCrossModelOffset, false, NSVerts, 0, NSIndices);
-
-
+                                     BuildFace(typeid, new Vector3(x, y, z + 1f) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, -1f) + randomCrossModelOffset, false, NSVerts, 0, NSIndices);
+                                BuildFace(typeid, new Vector3(x, y, z + 1f) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, -1f) + randomCrossModelOffset, true, NSVerts, 0, NSIndices);
 
 
 
-                                     }
+
+                            }
 
 
                                  }
@@ -1325,14 +1348,60 @@ using System.Reflection;
                 }
             }
         }
-          verticesOpqArray=verticesOpq.ToArray();
-          verticesNSArray=verticesNS.ToArray();
-           verticesWTArray=verticesWT.ToArray();
+        verticesOpqArray=verticesOpq.ToArray();
+        verticesNSArray=verticesNS.ToArray();
+        verticesWTArray=verticesWT.ToArray();
         indicesOpqArray=indicesOpq.ToArray();
         indicesNSArray=indicesNS.ToArray();
         indicesWTArray=indicesWT.ToArray();
         this.chunkBounds = this.CalculateBounds();
-        //  Debug.WriteLine(verticesOpq.Count);
+        isReadyToRender = false;
+        //   if (VBOpq == null)
+        //   {
+        VBOpq = new  VertexBuffer(this.device, typeof(VertexPositionNormalTexture), verticesOpqArray.Length , BufferUsage.WriteOnly);
+     //   }
+      
+           VBOpq.SetData(verticesOpqArray);
+      //  if(IBOpq == null)
+      //  {
+        IBOpq = new  IndexBuffer(this.device, IndexElementSize.SixteenBits, indicesOpqArray.Length , BufferUsage.WriteOnly);
+       // }
+        
+        IBOpq.SetData(indicesOpqArray);
+        
+        VBWT = new VertexBuffer(this.device, typeof(VertexPositionNormalTexture), verticesWTArray.Length  , BufferUsage.WriteOnly);
+       
+        if (verticesWTArray.Length > 0)
+        {
+        VBWT.SetData(verticesWTArray);
+        }
+       
+            IBWT = new IndexBuffer(this.device, IndexElementSize.SixteenBits, indicesWTArray.Length , BufferUsage.WriteOnly);
+        
+        if (indicesWTArray.Length > 0)
+        {
+            IBWT.SetData(indicesWTArray);
+        }
+
+        
+  
+
+        
+            VBNS = new VertexBuffer(this.device, typeof(VertexPositionNormalTexture), verticesNSArray.Length  , BufferUsage.WriteOnly);
+       
+        if (verticesNSArray.Length > 0)
+        {
+            VBNS.SetData(verticesNSArray);
+        }
+
+       
+            IBNS = new IndexBuffer(this.device, IndexElementSize.SixteenBits, indicesNSArray.Length  , BufferUsage.WriteOnly);
+        
+        if (indicesNSArray.Length > 0)
+        {
+            IBNS.SetData(indicesNSArray);
+        }
+
 
     }
     static void BuildFace(int typeid, Vector3 corner, Vector3 up, Vector3 right, bool reversed, List<VertexPositionNormalTexture> verts, int side,List<ushort> indices)
@@ -1367,17 +1436,17 @@ using System.Reflection;
         //    uvs.Add(new Vector2(uvCorner.x, uvCorner.y + uvWidth.y));
         //    uvs.Add(new Vector2(uvCorner.x + uvWidth.x, uvCorner.y + uvWidth.y));
         //    uvs.Add(new Vector2(uvCorner.x + uvWidth.x, uvCorner.y));
-        Vector3 normal = Vector3.Cross(up, right);
-        vert00.Normal = normal;
-        vert01.Normal = normal;
-        vert11.Normal = normal;
-        vert10.Normal = normal;
-        verts.Add(vert00);
-        verts.Add(vert01);
-        verts.Add(vert11);
-        verts.Add(vert10);
+      
+        
         if (!reversed)
         {
+
+
+            Vector3 normal = -Vector3.Cross(up, right);
+            vert00.Normal = normal;
+            vert01.Normal = normal;
+            vert11.Normal = normal;
+            vert10.Normal = normal;
             /*  verts.Add(vert00);
                verts.Add(vert01);
                verts.Add(vert11);
@@ -1398,6 +1467,11 @@ using System.Reflection;
         else
         {
 
+            Vector3 normal = Vector3.Cross(up, right);
+            vert00.Normal = normal;
+            vert01.Normal = normal;
+            vert11.Normal = normal;
+            vert10.Normal = normal;
             /*    verts.Add(vert01);
                 verts.Add(vert00);
                 verts.Add(vert11);
@@ -1413,6 +1487,13 @@ using System.Reflection;
             indices.Add((ushort)(index + 0));
         
         }
+
+        verts.Add(vert00);
+        verts.Add(vert01);
+        verts.Add(vert11);
+        verts.Add(vert10);
+
+
 
     }
 
@@ -1489,7 +1570,7 @@ using System.Reflection;
         {
             if (x >= chunkWidth)
             {
-                if (rightChunk != null && rightChunk.isReadyToRender == true)
+                if (rightChunk != null && rightChunk.isMapGenCompleted == true)
                 {
                     return rightChunk.map[0, y, z];
                 }
@@ -1498,7 +1579,7 @@ using System.Reflection;
             }
             else if (z >= chunkWidth)
             {
-                if (frontChunk != null && frontChunk.isReadyToRender == true)
+                if (frontChunk != null && frontChunk.isMapGenCompleted == true)
                 {
                     return frontChunk.map[x, y, 0];
                 }
@@ -1506,7 +1587,7 @@ using System.Reflection;
             }
             else if (x < 0)
             {
-                if (leftChunk != null && leftChunk.isReadyToRender == true)
+                if (leftChunk != null && leftChunk.isMapGenCompleted == true)
                 {
                     return leftChunk.map[chunkWidth - 1, y, z];
                 }
@@ -1514,7 +1595,7 @@ using System.Reflection;
             }
             else if (z < 0)
             {
-                if (backChunk != null && backChunk.isReadyToRender == true)
+                if (backChunk != null && backChunk.isMapGenCompleted == true)
                 {
                     return backChunk.map[x, y, chunkWidth - 1];
                 }
@@ -1531,6 +1612,12 @@ using System.Reflection;
     public ushort[] indicesOpqArray;
     public ushort[] indicesNSArray;
     public ushort[] indicesWTArray;
+    public  IndexBuffer IBOpq;
+    public VertexBuffer VBOpq;
+    public IndexBuffer IBWT;
+    public  VertexBuffer VBWT;
+    public IndexBuffer IBNS;
+    public VertexBuffer VBNS;
     public int GetHighestPoint()
     {
         int returnValue = 0;
@@ -1549,20 +1636,23 @@ using System.Reflection;
         }
         return returnValue;
     }
+    
     public async void BuildChunk()
     {
-
-       await Task.Run(()=> InitMap(chunkPos));
+        
+        await Task.Run(()=> InitMap(chunkPos));
         //     GenerateMesh(verticesOpq, verticesNS, verticesWT);
         //  Debug.WriteLine(verticesOpqArray.Length);
         //Debug.WriteLine(verticesWTArray.Length);
         isReadyToRender = true;
+    
     }
     public void Dispose()
     {
-        this.map= null;
+     /*  
+     //   this.map= null;
         this.verticesNSArray= null;
-        this.additiveMap = null;
+    //     this.additiveMap = null;
         this.verticesWTArray= null;
         this.verticesOpqArray= null;
         this.verticesOpq= null;
@@ -1575,5 +1665,41 @@ using System.Reflection;
         this.indicesOpq  = null;
         this.indicesNS  = null;
         this.indicesWT  = null;
+        if (this.VBOpq != null)
+        {
+        this.VBOpq.Dispose(); 
+        }
+        if (this.VBOpq != null)
+        {
+            this.VBOpq.Dispose();
+        }
+        if (this.IBOpq != null)
+        {
+            this.IBOpq.Dispose();
+        }
+        if (this.VBWT != null)
+        {
+            this.VBWT.Dispose();
+        }
+        if (this.IBWT != null)
+        {
+            this.IBWT.Dispose();
+        }
+        if (this.VBNS != null)
+        {
+            this.VBNS.Dispose();
+        }
+        if (this.IBNS != null)
+        {
+            this.IBNS.Dispose();
+        }
+       
+        this.VBOpq=null;
+        this.IBOpq = null;
+        this.VBWT = null;
+        this.IBWT = null;*/
+        
+        
+       
     }
     }

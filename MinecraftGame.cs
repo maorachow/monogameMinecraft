@@ -30,7 +30,7 @@ namespace monogameMinecraft
         public ChunkRenderer chunkRenderer;
         public Thread updateWorldThread;
         public Thread tryRemoveChunksThread;
-        public int renderDistance=128;
+        public int renderDistance=512;
         public GameStatus status;
          
         
@@ -38,7 +38,7 @@ namespace monogameMinecraft
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            IsMouseVisible = true;
+            IsMouseVisible = false;
             Window.AllowUserResizing = true;
 
             Window.ClientSizeChanged += OnResize;
@@ -70,32 +70,45 @@ namespace monogameMinecraft
         }
         public void InitGameplay()
         {
-            gamePlayer = new GamePlayer(new Vector3(-0.3f, 100, -0.3f), new Vector3(0.3f, 101.8f, 0.3f), this);
             
+            ChunkManager.chunks = new System.Collections.Concurrent.ConcurrentDictionary<Vector2Int, Chunk>();
+            ChunkManager.chunkDataReadFromDisk = new Dictionary<Vector2Int, ChunkData>();
             Chunk.biomeNoiseGenerator.SetFrequency(0.002f);
-          ChunkManager.ReadJson();
-      
+            ChunkManager.ReadJson();
+            status = GameStatus.Started;
+            gamePlayer = new GamePlayer(new Vector3(-0.3f, 100, -0.3f), new Vector3(0.3f, 101.8f, 0.3f), this);
             chunkNSEffect=new AlphaTestEffect(GraphicsDevice);
             updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread(renderDistance, gamePlayer,this));
+            updateWorldThread.IsBackground = true;
             updateWorldThread.Start();
             tryRemoveChunksThread = new Thread(() => ChunkManager.TryDeleteChunksThread(renderDistance, gamePlayer, this));
+            tryRemoveChunksThread.IsBackground = true;
             tryRemoveChunksThread.Start();
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
             //  chunkEffect = Content.Load<Effect>("blockeffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkNSEffect,chunkSolidEffect);
             chunkRenderer.SetTexture(terrainTex);
             GamePlayer.ReadPlayerData(gamePlayer,this);
-            status = GameStatus.Started;
+
+             
         }
         void QuitGameplay()
-        {
-            status = GameStatus.Quiting;
+        {  
+            
             ChunkManager.SaveWorldData();
             GamePlayer.SavePlayerData(gamePlayer);
-            ChunkManager.chunks.Clear();
+            foreach(var c in ChunkManager.chunks)
+            {
+            c.Value.Dispose();
+            }
+            ChunkManager.isJsonReadFromDisk=false;
+            ChunkManager.chunks .Clear();
             ChunkManager.chunkDataReadFromDisk.Clear();
-
+            GC.Collect();
+           
             
+
+            status = GameStatus.Menu;
            // updateWorldThread.Abort();
          //   tryRemoveChunksThread.Abort();
         }
@@ -107,7 +120,7 @@ namespace monogameMinecraft
              _spriteBatch = new SpriteBatch(GraphicsDevice);
           //  InitGameplay();
         //    sf = Content.Load<SpriteFont>("defaultfont");
-            UIUtility.InitMenuUI(this);
+            UIUtility.InitGameUI(this);
             // Chunk c = new Chunk(new Vector2Int(0,0));
             //  chunkSolidEffect = new Effect();
 
@@ -132,6 +145,7 @@ namespace monogameMinecraft
         int lastMouseY;
         protected override void Update(GameTime gameTime)
         {
+            if(!IsActive) return;
             switch (status)
             {
                 case GameStatus.Menu:
@@ -147,14 +161,20 @@ namespace monogameMinecraft
                 //     status = GameStatus.Quiting;
                 QuitGameplay();
               //  Exit();
-                Environment.Exit(0);
+             //   Environment.Exit(0);
             }
 
+                    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
-            // TODO: Add your update logic here
-           
-            gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
-            ProcessPlayerKeyboardInput(gameTime);
+                    foreach (var el in UIElement.inGameUIs)
+                    {
+                        el.Update();
+                    }
+                    _spriteBatch.End();
+                    // TODO: Add your update logic here
+
+                    gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
+                    ProcessPlayerKeyboardInput(gameTime);
 
 
                     break;
@@ -208,22 +228,29 @@ namespace monogameMinecraft
                 playerVec.Y =- 1f;
             }
             gamePlayer.ProcessPlayerInputs(playerVec, (float)gameTime.ElapsedGameTime.TotalSeconds, kState,mState); 
-            ProcessPlayerMouseInput();
+         
         }
         protected override void Draw(GameTime gameTime)
         {
-
+            if (!IsActive) return;
 
             switch (status)
             {
                 case GameStatus.Started:
-                    Debug.WriteLine("started");
+        //            Debug.WriteLine("started");
                 GraphicsDevice.Clear(Color.CornflowerBlue);
-            // Debug.WriteLine(ChunkManager.chunks.Count);
-         
-                GraphicsDevice.DepthStencilState= DepthStencilState.Default;
-                chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
+                    // Debug.WriteLine(ChunkManager.chunks.Count);
+                    ProcessPlayerMouseInput();
+                    GraphicsDevice.DepthStencilState= DepthStencilState.Default;
+                    chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
+                    GraphicsDevice.DepthStencilState = DepthStencilState.None;
+                    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
+                    foreach (var el in UIElement.inGameUIs)
+                    {
+                        el.DrawString(el.text);
+                    }
+                    _spriteBatch.End();
                     break;
                     case GameStatus.Menu:
                     GraphicsDevice.Clear(Color.CornflowerBlue);

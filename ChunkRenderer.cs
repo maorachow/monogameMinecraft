@@ -45,8 +45,10 @@ namespace monogameMinecraft
             //  allVertices= new List<VertexPositionNormalTexture>();
             basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
-        //    basicNSShader.View = player.cam.GetViewMatrix();
-        //    basicNSShader.Projection = player.cam.projectionMatrix;
+            basicShader.Parameters["fogStart"].SetValue(256.0f);
+            basicShader.Parameters["fogRange"].SetValue(1024.0f);
+            //    basicNSShader.View = player.cam.GetViewMatrix();
+            //    basicNSShader.Projection = player.cam.projectionMatrix;
             isBusy = true;
             BoundingFrustum frustum=new BoundingFrustum(player.cam.viewMatrix*player.cam.projectionMatrix);
            
@@ -102,10 +104,12 @@ namespace monogameMinecraft
             basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
             if (c.verticesWTArray.Length > 0)
             {
-                buffer.SetData(c.verticesWTArray);
-                device.SetVertexBuffer(buffer);
-                bufferIndex.SetData(c.indicesWTArray);
-                device.Indices = bufferIndex;
+                //buffer.SetData(c.verticesWTArray);
+                
+             //   bufferIndex.SetData(c.indicesWTArray);
+
+                device.Indices = c.IBWT;
+                device.SetVertexBuffer(c.VBWT);
                 basicShader.Parameters["Alpha"].SetValue(0.7f);
                 foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
                 {
@@ -113,6 +117,21 @@ namespace monogameMinecraft
                     device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesWTArray.Length / 3);
                 }
             }
+            basicShader.Parameters["Alpha"].SetValue(1.0f);
+            if (c.verticesNSArray.Length > 0)
+            {
+               
+                device.SetVertexBuffer(c.VBNS);
+              
+                device.Indices = c.IBNS;
+              
+                foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesNSArray.Length / 3);
+                }
+            } 
+               
         }
          void RenderSingleChunkOpq(Chunk c,GamePlayer player)
         {
@@ -124,11 +143,14 @@ namespace monogameMinecraft
          
 
                 basicShader.Parameters["Alpha"].SetValue(1.0f);
-                buffer.SetData(c.verticesOpqArray);
-                device.SetVertexBuffer(buffer);
+            
+            basicShader.Parameters["viewPos"].SetValue(game.gamePlayer.playerPos);
+            //    basicShader.Parameters["fogDensity"].SetValue(0.01f);
+            // buffer.SetData(c.verticesOpqArray);
+            device.SetVertexBuffer(c.VBOpq);
               
-                bufferIndex.SetData(c.indicesOpqArray);
-                device.Indices = bufferIndex;
+               // bufferIndex.SetData(c.indicesOpqArray);
+                device.Indices = c.IBOpq;
                 foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
                 {
                     pass.Apply();
