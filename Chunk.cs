@@ -16,6 +16,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Reflection;
 using System.Net.Http.Headers;
+using System.Threading;
 
 [MessagePackObject]
     public struct Vector2Int : IEquatable<Vector2Int>
@@ -204,7 +205,7 @@ public struct RandomGenerator3D
         [IgnoreMember]
         public static FastNoise biomeNoiseGenerator = new FastNoise();
         [IgnoreMember]
-        public static int worldGenType = 0;//1 superflat 0 inf
+        public static int worldGenType =0;//1 superflat 0 inf
         [IgnoreMember]
         public static int chunkWidth = 16;
         [IgnoreMember]
@@ -244,8 +245,14 @@ public struct RandomGenerator3D
     
     
     };
-        
-        public static System.Random worldRandomGenerator = new System.Random(0);
+    //0None 1Stone 2Grass 3Dirt 4Side grass block 5Bedrock 6WoodX 7WoodY 8WoodZ 9Leaves 10Diamond Ore 11Sand
+    //100Water 101Grass
+    //102torch
+    //200Leaves
+    //0-99solid blocks
+    //100-199no hitbox blocks
+    //200-299hitbox nonsolid blocks
+  //  public static System.Random worldRandomGenerator = new System.Random(0);
         [IgnoreMember]
         public Chunk frontChunk;
         [IgnoreMember]
@@ -584,36 +591,18 @@ public struct RandomGenerator3D
             return;
             }
 
-           
-            if (worldGenType == 1)
-            {
-                for (int i = 0; i < chunkWidth; i++)
-                {
-                    for (int j = 0; j < chunkWidth; j++)
-                    {
-                        for (int k = 0; k < chunkHeight / 4; k++)
-                        {
-                            map[i, k, j] = 1;
-                        }
-                    }
-                }
-            isMapGenCompleted = true;
-            GenerateMesh(verticesOpq, verticesNS, verticesWT, indicesOpq, indicesNS, indicesWT);
-            }
-            else
-            {
+        
+      
+          
                 FreshGenMap(chunkPos);
             GenerateMesh(verticesOpq, verticesNS, verticesWT, indicesOpq, indicesNS, indicesWT);
-            }
+           
             }
              
            
             void FreshGenMap(Vector2Int pos)
             {
-            if (isChunkDataSavedInDisk == true)
-            {
-
-            }
+           
                 map = additiveMap;
                 if (worldGenType == 0)
                 {
@@ -738,7 +727,7 @@ public struct RandomGenerator3D
                                     if (treeCount > 0)
                                     {
                                                  //Debug.WriteLine(RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)));
-                                        if (RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)+new Vector3Int(chunkPos.x,0,chunkPos.y)) > 98)
+                                        if (RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)+new Vector3Int(chunkPos.x,0,chunkPos.y)) > 96)
                                         {
 
 
@@ -1128,7 +1117,10 @@ public struct RandomGenerator3D
                 {//new int[chunkwidth,chunkheiight,chunkwidth]
                  //     BuildBlock(x, y, z, verts, uvs, tris, vertsNS, uvsNS, trisNS);
 
-
+                    if (map == null)
+                    {
+                        return;
+                    }
                         int typeid = this.map[x, y, z];
                     if (typeid == 0) continue;
                    
@@ -1636,70 +1628,113 @@ public struct RandomGenerator3D
         }
         return returnValue;
     }
-    
+   public bool isTaskCompleted;
     public async void BuildChunk()
     {
-        
+        isTaskCompleted = false;
         await Task.Run(()=> InitMap(chunkPos));
+        isTaskCompleted = true;
         //     GenerateMesh(verticesOpq, verticesNS, verticesWT);
         //  Debug.WriteLine(verticesOpqArray.Length);
         //Debug.WriteLine(verticesWTArray.Length);
         isReadyToRender = true;
     
     }
+    private bool disposed;
+    
+    
     public void Dispose()
     {
-     /*  
-     //   this.map= null;
-        this.verticesNSArray= null;
-    //     this.additiveMap = null;
-        this.verticesWTArray= null;
-        this.verticesOpqArray= null;
-        this.verticesOpq= null;
-        this.verticesNS= null;
-        this.verticesWT= null;
-        this.verticesNSArray= null;
-        this.indicesOpqArray= null;
-        this.indicesNSArray= null;
-        this.indicesWTArray= null;
-        this.indicesOpq  = null;
-        this.indicesNS  = null;
-        this.indicesWT  = null;
-        if (this.VBOpq != null)
-        {
-        this.VBOpq.Dispose(); 
-        }
-        if (this.VBOpq != null)
-        {
-            this.VBOpq.Dispose();
-        }
-        if (this.IBOpq != null)
-        {
-            this.IBOpq.Dispose();
-        }
-        if (this.VBWT != null)
-        {
-            this.VBWT.Dispose();
-        }
-        if (this.IBWT != null)
-        {
-            this.IBWT.Dispose();
-        }
-        if (this.VBNS != null)
-        {
-            this.VBNS.Dispose();
-        }
-        if (this.IBNS != null)
-        {
-            this.IBNS.Dispose();
-        }
        
-        this.VBOpq=null;
-        this.IBOpq = null;
-        this.VBWT = null;
-        this.IBWT = null;*/
-        
-        
+        Dispose(true);
        
+        GC.SuppressFinalize(this);
+    }
+    ~Chunk()
+    {
+        
+        Dispose(false);
+    }
+
+    public void Dispose(bool disposing)
+    {
+        if (disposed)
+        {
+            return;
+        }
+        if (disposing)
+        {
+          
+        if (this.backChunk != null)
+        {
+            this.backChunk.frontChunk = null;
+        }
+        if (this.frontChunk != null)
+        {
+            this.frontChunk.backChunk = null;
+        }
+        if (this.leftChunk != null)
+        {
+        this.leftChunk.rightChunk = null;
+        }
+        if(this.rightChunk != null)
+        {
+        this.rightChunk.leftChunk = null;
+        }
+        
+          
+            this.map= null;
+            this.verticesNSArray= null;
+            this.additiveMap = null;
+            this.verticesWTArray= null;
+            this.verticesOpqArray= null;
+            this.verticesOpq= null;
+            this.verticesNS= null;
+            this.verticesWT= null;
+            this.verticesNSArray= null;
+            this.indicesOpqArray= null;
+            this.indicesNSArray= null;
+            this.indicesWTArray= null;
+            this.indicesOpq  = null;
+            this.indicesNS  = null;
+            this.indicesWT  = null;
+           if (this.VBOpq != null)
+           {
+           this.VBOpq.Dispose(); 
+           }
+           if (this.VBOpq != null)
+           {
+               this.VBOpq.Dispose();
+           }
+           if (this.IBOpq != null)
+           {
+               this.IBOpq.Dispose();
+           }
+           if (this.VBWT != null)
+           {
+               this.VBWT.Dispose();
+           }
+           if (this.IBWT != null)
+           {
+               this.IBWT.Dispose();
+           }
+           if (this.VBNS != null)
+           {
+               this.VBNS.Dispose();
+           }
+           if (this.IBNS != null)
+           {
+               this.IBNS.Dispose();
+           }
+
+           this.VBOpq=null;
+           this.IBOpq = null;
+           this.VBWT = null;
+           this.IBWT = null;
+        }
+        disposed = true;
+
+
+
     }
     }

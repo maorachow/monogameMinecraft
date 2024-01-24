@@ -17,9 +17,32 @@ namespace monogameMinecraft
             sf = game.Content.Load<SpriteFont>("defaultfont");
             Texture2D menubkgrd = game.Content.Load<Texture2D>("menubackground");
             Texture2D buttonTex = game.Content.Load<Texture2D>("buttontexture");
+            Texture2D hotbarTex = game.Content.Load<Texture2D>("hotbar");
+            Texture2D selectedHotbarTex = game.Content.Load<Texture2D>("selectedhotbar");
+
+            Texture2D blockTex1 = game.Content.Load<Texture2D>("blocksprites/stone");
+            Texture2D blockTex2 = game.Content.Load<Texture2D>("blocksprites/grass_side_carried");
+            Texture2D blockTex3 = game.Content.Load<Texture2D>("blocksprites/dirt");
+            Texture2D blockTex4= game.Content.Load<Texture2D>("blocksprites/grass_side_carried");
+            Texture2D blockTex5 = game.Content.Load<Texture2D>("blocksprites/bedrock");
+            Texture2D blockTex6 = game.Content.Load<Texture2D>("blocksprites/log_oak");
+            Texture2D blockTex7 = game.Content.Load<Texture2D>("blocksprites/log_oak");
+            Texture2D blockTex8 = game.Content.Load<Texture2D>("blocksprites/log_oak");
+            Texture2D blockTex9 = game.Content.Load<Texture2D>("blocksprites/leaves_oak_carried");
             UIElement.UITextures = new Dictionary<string, Texture2D> {
                     { "menubackground" ,menubkgrd},
                     { "buttontexture" ,buttonTex},
+                    {"hotbartexture",hotbarTex },
+                    {"selectedhotbar",selectedHotbarTex },
+                    {"blocktexture1",blockTex1 },
+                    {"blocktexture2",blockTex2 },
+                    { "blocktexture3",blockTex3},
+                    { "blocktexture4",blockTex4},
+                    { "blocktexture5",blockTex5},
+                    {"blocktexture6" ,blockTex6},
+                    {"blocktexture7" ,blockTex7},
+                    {"blocktexture8" ,blockTex8},
+                    { "blocktexture9",blockTex9}
             };
             UIElement.menuUIs = new List<UIElement> {
                 
@@ -30,7 +53,7 @@ namespace monogameMinecraft
             };
             UIElement.inGameUIs = new List<UIElement>
             {
-                new InGameUI(sf,game.Window,game._spriteBatch, game) 
+                new InGameUI(sf,game.Window,game._spriteBatch, game,UIElement.UITextures["hotbartexture"],UIElement.UITextures["selectedhotbar"])
             };
             game.status = GameStatus.Menu;
         }

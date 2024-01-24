@@ -156,12 +156,12 @@ namespace monogameMinecraft
 
                 foreach (var c in ChunkManager.chunks)
                 {
-                    if ((MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (renderDistance + Chunk.chunkWidth))&&c.Value.isReadyToRender==true)
+                    if ((MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (renderDistance + Chunk.chunkWidth))&&c.Value.isReadyToRender==true&&c.Value.isTaskCompleted==true)
                     {
                             // Chunk c2;
                             c.Value.isReadyToRender = false;
                             c.Value.SaveSingleChunk();
-                         //   c.Value.Dispose();
+                            c.Value.Dispose();
                        
                             ChunkManager.chunks.TryRemove(c);
                    //           break;

@@ -25,12 +25,13 @@ namespace monogameMinecraft
         private GraphicsDeviceManager _graphics;
         public SpriteBatch _spriteBatch;
         public Effect chunkSolidEffect;
+        public Effect chunkShadowEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
         public Thread updateWorldThread;
         public Thread tryRemoveChunksThread;
-        public int renderDistance=512;
+        public int renderDistance=256;
         public GameStatus status;
          
         
@@ -38,7 +39,7 @@ namespace monogameMinecraft
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            IsMouseVisible = false;
+        //    IsMouseVisible = false;
             Window.AllowUserResizing = true;
 
             Window.ClientSizeChanged += OnResize;
@@ -70,7 +71,7 @@ namespace monogameMinecraft
         }
         public void InitGameplay()
         {
-            
+            IsMouseVisible = false;
             ChunkManager.chunks = new System.Collections.Concurrent.ConcurrentDictionary<Vector2Int, Chunk>();
             ChunkManager.chunkDataReadFromDisk = new Dictionary<Vector2Int, ChunkData>();
             Chunk.biomeNoiseGenerator.SetFrequency(0.002f);
@@ -85,22 +86,24 @@ namespace monogameMinecraft
             tryRemoveChunksThread.IsBackground = true;
             tryRemoveChunksThread.Start();
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
+            chunkShadowEffect = Content.Load<Effect>("createshadowmapeffect");
             //  chunkEffect = Content.Load<Effect>("blockeffect");
-            chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkNSEffect,chunkSolidEffect);
+            chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect, chunkShadowEffect);
             chunkRenderer.SetTexture(terrainTex);
             GamePlayer.ReadPlayerData(gamePlayer,this);
 
              
         }
+
         void QuitGameplay()
-        {  
-            
+        {
+            IsMouseVisible = true;
             ChunkManager.SaveWorldData();
             GamePlayer.SavePlayerData(gamePlayer);
-            foreach(var c in ChunkManager.chunks)
+       /*     foreach(var c in ChunkManager.chunks)
             {
             c.Value.Dispose();
-            }
+            }*/
             ChunkManager.isJsonReadFromDisk=false;
             ChunkManager.chunks .Clear();
             ChunkManager.chunkDataReadFromDisk.Clear();
@@ -156,6 +159,7 @@ namespace monogameMinecraft
                     break;
                 case GameStatus.Started:
 
+
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
             {
                 //     status = GameStatus.Quiting;
@@ -194,9 +198,10 @@ namespace monogameMinecraft
             lastMouseY = mState.Y;
             lastMouseX = mState.X;
         }
-         
+        MouseState lastMouseState;
         void ProcessPlayerKeyboardInput(GameTime gameTime)
         {
+            
             var kState = Keyboard.GetState();
             var mState = Mouse.GetState();
             Vector3 playerVec = new Vector3(0f, 0f,0f);
@@ -227,8 +232,10 @@ namespace monogameMinecraft
             {
                 playerVec.Y =- 1f;
             }
-            gamePlayer.ProcessPlayerInputs(playerVec, (float)gameTime.ElapsedGameTime.TotalSeconds, kState,mState); 
-         
+            gamePlayer.ProcessPlayerInputs(playerVec, (float)gameTime.ElapsedGameTime.TotalSeconds, kState,mState,lastMouseState);
+            lastMouseState = mState;
+
+
         }
         protected override void Draw(GameTime gameTime)
         {
@@ -238,7 +245,7 @@ namespace monogameMinecraft
             {
                 case GameStatus.Started:
         //            Debug.WriteLine("started");
-                GraphicsDevice.Clear(Color.CornflowerBlue);
+                    GraphicsDevice.Clear(Color.CornflowerBlue);
                     // Debug.WriteLine(ChunkManager.chunks.Count);
                     ProcessPlayerMouseInput();
                     GraphicsDevice.DepthStencilState= DepthStencilState.Default;
@@ -250,6 +257,9 @@ namespace monogameMinecraft
                     {
                         el.DrawString(el.text);
                     }
+                    _spriteBatch.End();
+                    _spriteBatch.Begin( );
+                    _spriteBatch.Draw(chunkRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                     _spriteBatch.End();
                     break;
                     case GameStatus.Menu:

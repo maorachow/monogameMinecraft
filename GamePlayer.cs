@@ -23,8 +23,8 @@ namespace monogameMinecraft
         float fastPlayerSpeed =20f;
         float slowPlayerSpeed = 5f;
         public bool isLanded=false;
-        int currentSelectedHotbar = 0;
-        short[] inventoryData = new short[9];
+        public int currentSelectedHotbar = 0;
+        public short[] inventoryData = new short[9];
         public static bool isPlayerDataSaved = false;
         public static void ReadPlayerData(GamePlayer player,Game game)
         {
@@ -64,9 +64,10 @@ namespace monogameMinecraft
               //  Debug.WriteLine(playerData.posX);
                 player.SetBoundPosition(new Vector3(playerData.posX, playerData.posY, playerData.posZ)+new Vector3(0f,0.3f,0f));
                 player.inventoryData=(short[])playerData.inventoryData.Clone();
+               
                 player.GetBlocksAround(player.playerBounds);
             }
-
+ player.inventoryData[0] = 1;
         //    isJsonReadFromDisk = true;
         }
         void SetBoundPosition(Vector3 pos)
@@ -164,6 +165,22 @@ namespace monogameMinecraft
             Ray ray = new Ray(cam.position, cam.front);
             Vector3 blockPoint = ChunkManager.RaycastFirstPosition(ray, 5f);
             ChunkManager.SetBlockWithUpdate(blockPoint,0);
+            GetBlocksAround(playerBounds);
+        }
+        public void PlaceBlock()
+        {
+            if(inventoryData[currentSelectedHotbar]==0)
+            {
+                return;
+            }
+            Ray ray = new Ray(cam.position, cam.front);
+            Vector3 blockPoint = ChunkManager.RaycastFirstPosition(ray, 5f);
+            if((blockPoint- cam.position).Length() > 4.8f)
+            {
+                return;
+            }
+            Vector3 setBlockPoint = Vector3.Lerp(cam.position, blockPoint, 0.95f);
+            ChunkManager.SetBlockWithUpdate(setBlockPoint, inventoryData[currentSelectedHotbar]);
             GetBlocksAround(playerBounds);
         }
         public void Move(Vector3 moveVec)
@@ -264,7 +281,7 @@ namespace monogameMinecraft
 
         }
         public float jumpCD = 0f;
-        public void ProcessPlayerInputs(Vector3 dir, float deltaTime, KeyboardState kState,MouseState mState)
+        public void ProcessPlayerInputs(Vector3 dir, float deltaTime, KeyboardState kState,MouseState mState,MouseState prevMouseState)
         {
             if (breakBlockCD > 0f)
             {
@@ -326,8 +343,19 @@ namespace monogameMinecraft
                 BreakBlock();
                 breakBlockCD = 0.3f;
             }
+            if (breakBlockCD <= 0f && mState.RightButton == ButtonState.Pressed)
+            {
+                PlaceBlock();
+                breakBlockCD = 0.3f;
+            }
+            if(mState.ScrollWheelValue-prevMouseState.ScrollWheelValue != 0f)
+            {
+                currentSelectedHotbar += (int)((mState.ScrollWheelValue - prevMouseState.ScrollWheelValue)/120f);
+                currentSelectedHotbar = MathHelper.Clamp(currentSelectedHotbar, 0, 8);
+                Debug.WriteLine(mState.ScrollWheelValue - prevMouseState.ScrollWheelValue);
+            }
         }
-       public float breakBlockCD=0f;
+         public float breakBlockCD=0f;
     }
     
    public class Camera
@@ -359,7 +387,7 @@ namespace monogameMinecraft
         public float MouseSensitivity =0.5f;
         public void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true)
         {
-            updateCameraVectors();
+            
             xoffset *= MouseSensitivity;
             yoffset *= MouseSensitivity;
 
@@ -375,7 +403,7 @@ namespace monogameMinecraft
                 if (Pitch < -89.0f)
                     Pitch = -89.0f;
             }
-
+        updateCameraVectors();
             // update Front, Right and Up Vectors using the updated Euler angles
             
         }
