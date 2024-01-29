@@ -24,11 +24,11 @@ sampler2D textureSampler = sampler_state
 sampler ShadowMapSampler = sampler_state
 {
     texture = <ShadowMap>;
-    magfilter = Linear;
-    minfilter = Linear;
-    mipfilter = Linear;
-    AddressU = Wrap;
-    AddressV = Wrap;
+    magfilter = Point;
+    minfilter = Point;
+    mipfilter = Point;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
 
 struct VertexShaderInput
@@ -80,22 +80,31 @@ float ShadowCalculation(float4 fragPosLightSpace)
    
     float3 projCoords = fragPosLightSpace.xyz /fragPosLightSpace.w;
    
-    projCoords = projCoords * 0.5 + 0.5;
+    projCoords.xy = projCoords * 0.5 + 0.5;
     projCoords.y = 1 - projCoords.y;
         
     float closestDepth = tex2D(ShadowMapSampler, projCoords.xy).r;
-    if (closestDepth <=0.0001)
-    {
-        return 0;
-    }
-    float currentDepth = projCoords.z;
-    float bias = 0.0005;
    
-        
-    float shadow = currentDepth-bias>closestDepth?1:0   ;
+    float currentDepth = projCoords.z;
+    float shadow;
+    float shadowBias = -0.003;
+    if (closestDepth - shadowBias < currentDepth)
+    {
+        shadow = 0;
+    }
+    else
+    {
+        shadow = 1;
+    }
+         if (closestDepth <= 0.001)
+    {
+        shadow = 1.0;
+    }
+ //   float shadow = currentDepth/closestDepth ;
+    
     if (projCoords.z > 1.0)
     {
-        shadow = 0.0;
+        shadow = 1.0;
     }
     return shadow;
 }
@@ -123,10 +132,9 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     }
   
     float shadow = ShadowCalculation(input.LightSpacePosition);
-      if (renderShadow)
-    {
+   
         output.Color.rgb *= (0.5 + (shadow * 0.5));
-    }
+   
     
     output.Color.rgb = lerp(output.Color.rgb,float3(100, 149,  237 )/float3(255,255,255) , fogIntensity);
    // output.Color = float4(1, 1, 1, 1);

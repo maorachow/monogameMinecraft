@@ -37,7 +37,7 @@ namespace monogameMinecraft
  
             this.shadowmapShader= shadowmapShader;
  
-            shadowMapTarget = new RenderTarget2D(device, 2048, 2048, false,SurfaceFormat.Single,DepthFormat.Depth24);
+            shadowMapTarget = new RenderTarget2D(device, 2048, 2048, false,SurfaceFormat.Color,DepthFormat.Depth24);
         }
         public RenderTarget2D shadowMapTarget;
         Matrix lightView = Matrix.CreateLookAt(new Vector3(100,100,100), new Vector3(0,0,0) ,
@@ -51,7 +51,7 @@ namespace monogameMinecraft
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
-            lightView = Matrix.CreateLookAt(new Vector3(20, 50, 10) + player.cam.position, player.cam.position, Vector3.UnitY);
+            lightView = Matrix.CreateLookAt(new Vector3(10, 50, 30) + player.cam.position, player.cam.position, Vector3.UnitY);
             Matrix lightSpaceMat = lightView * lightProjection;
             shadowmapShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
             RenderShadow(RenderingChunks, player,lightSpaceMat);
@@ -152,7 +152,7 @@ namespace monogameMinecraft
         }
         void RenderSingleChunkTransparent(Chunk c, GamePlayer player)
         {
-            basicShader.Parameters["renderShadow"].SetValue(false);
+         //   basicShader.Parameters["renderShadow"].SetValue(false);
             basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
             if (c.verticesWTArray.Length > 0)
             {
@@ -187,7 +187,7 @@ namespace monogameMinecraft
         }
          void RenderSingleChunkOpq(Chunk c,GamePlayer player)
         {
-            basicShader.Parameters["renderShadow"].SetValue(true);
+        //    basicShader.Parameters["renderShadow"].SetValue(true);
             basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y))) ;
         //    basicNSShader.World= Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y));
             //Debug.WriteLine("render");

@@ -4,14 +4,14 @@ matrix LightSpaceMat;
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
- 
+  
     
 };
 struct VertexShaderOutput
 {
    
     float4 Position : SV_POSITION;
-    float Depth : TEXCOORD0;
+    float2 Depth : TEXCOORD0;
 };
 
 struct PixelShaderOutput
@@ -27,14 +27,14 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     float4 worldPosition = mul(input.Position, World);
     float4 projectionPosition = mul(worldPosition, LightSpaceMat);
     output.Position = projectionPosition;
-    output.Depth = output.Position.z / output.Position.w;
+    output.Depth = output.Position.zw;
     return output;
 }
 
 PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
 {
     PixelShaderOutput output = (PixelShaderOutput) 0;
-    output.Color = float4(input.Depth, input.Depth, input.Depth, 0);
+    output.Color = float4(input.Depth.x / input.Depth.y, input.Depth.x / input.Depth.y, input.Depth.x / input.Depth.y, 1);
     return output;
 }
 technique BlockTechnique
