@@ -26,6 +26,8 @@ namespace monogameMinecraft
         public int currentSelectedHotbar = 0;
         public short[] inventoryData = new short[9];
         public static bool isPlayerDataSaved = false;
+        public bool isChunkNeededUpdate=false;
+        public Chunk curChunk;
         public static void ReadPlayerData(GamePlayer player,Game game)
         {
        
@@ -67,7 +69,7 @@ namespace monogameMinecraft
                
                 player.GetBlocksAround(player.playerBounds);
             }
- player.inventoryData[0] = 1;
+        player.inventoryData[0] = 1;
         //    isJsonReadFromDisk = true;
         }
         void SetBoundPosition(Vector3 pos)
@@ -274,9 +276,18 @@ namespace monogameMinecraft
         }
         bool isPlayerFlying = false;
 
+        void UpdatePlayerChunk()
+        {
+            if (!ChunkManager.CheckIsPosInChunk(playerPos, curChunk))
+            {
+                isChunkNeededUpdate = true;
+                curChunk = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(playerPos));
+            }
+        }
+
         public void UpdatePlayer(float deltaTime)
         {
-           
+            UpdatePlayerChunk();
             ApplyGravity(deltaTime);
 
         }

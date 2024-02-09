@@ -555,6 +555,7 @@ public struct RandomGenerator3D
         {
             lock (taskLock)
             {
+       //     Thread.Sleep(400);
             this.chunkPos = chunkPos;
             thisHeightMap = GenerateChunkHeightmap(chunkPos);
         
@@ -1562,7 +1563,7 @@ public struct RandomGenerator3D
         {
             if (x >= chunkWidth)
             {
-                if (rightChunk != null && rightChunk.isMapGenCompleted == true)
+                if (  rightChunk != null && rightChunk.isMapGenCompleted == true && rightChunk.disposed == false)
                 {
                     return rightChunk.map[0, y, z];
                 }
@@ -1571,7 +1572,7 @@ public struct RandomGenerator3D
             }
             else if (z >= chunkWidth)
             {
-                if (frontChunk != null && frontChunk.isMapGenCompleted == true)
+                if (frontChunk != null && frontChunk.isMapGenCompleted == true&&frontChunk.disposed == false)
                 {
                     return frontChunk.map[x, y, 0];
                 }
@@ -1579,7 +1580,7 @@ public struct RandomGenerator3D
             }
             else if (x < 0)
             {
-                if (leftChunk != null && leftChunk.isMapGenCompleted == true)
+                if (leftChunk != null && leftChunk.isMapGenCompleted == true&&leftChunk.disposed == false)
                 {
                     return leftChunk.map[chunkWidth - 1, y, z];
                 }
@@ -1587,7 +1588,7 @@ public struct RandomGenerator3D
             }
             else if (z < 0)
             {
-                if (backChunk != null && backChunk.isMapGenCompleted == true)
+                if ( backChunk != null && backChunk.isMapGenCompleted == true&&backChunk.disposed == false )
                 {
                     return backChunk.map[x, y, chunkWidth - 1];
                 }
@@ -1640,7 +1641,7 @@ public struct RandomGenerator3D
         isReadyToRender = true;
     
     }
-    private bool disposed;
+    public bool disposed;
     
     
     public void Dispose()
@@ -1662,9 +1663,13 @@ public struct RandomGenerator3D
         {
             return;
         }
+        disposed = true;
         if (disposing)
         {
-          
+            if (isTaskCompleted == false)
+            {
+                return;
+            }
         if (this.backChunk != null)
         {
             this.backChunk.frontChunk = null;
@@ -1732,7 +1737,7 @@ public struct RandomGenerator3D
            this.VBWT = null;
            this.IBWT = null;
         }
-        disposed = true;
+      
 
 
 

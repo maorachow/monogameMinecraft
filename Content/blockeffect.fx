@@ -27,8 +27,8 @@ sampler ShadowMapSampler = sampler_state
     magfilter = Point;
     minfilter = Point;
     mipfilter = Point;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    AddressU = Wrap;
+    AddressV = Wrap;
 };
 
 struct VertexShaderInput
@@ -82,27 +82,53 @@ float ShadowCalculation(float4 fragPosLightSpace)
    
     projCoords.xy = projCoords * 0.5 + 0.5;
     projCoords.y = 1 - projCoords.y;
-        
+    bool isOutBounds = false;
+    if (projCoords.x < 0 || projCoords.x > 1 || projCoords.y < 0 || projCoords.y > 1)
+    {
+        isOutBounds = true;
+    }
     float closestDepth = tex2D(ShadowMapSampler, projCoords.xy).r;
    
     float currentDepth = projCoords.z;
     float shadow;
     float shadowBias = -0.003;
-    if (closestDepth - shadowBias < currentDepth)
+    float2 texelSize = 1.0 / 2048.0;
+    for (int x = -1; x <= 1; ++x)
+    {
+        for (int y = -1; y <= 1; ++y)
+        {
+            float pcfDepth = tex2D(ShadowMapSampler, projCoords.xy + float2(x, y) * texelSize).r;
+         //   shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
+            if (pcfDepth - shadowBias < currentDepth)
+            {
+                shadow+= 0;
+            }
+            else
+            {
+                shadow+= 1;
+            }
+        }
+    }
+    shadow /= 9.0;
+    /*if (closestDepth - shadowBias < currentDepth)
     {
         shadow = 0;
     }
     else
     {
         shadow = 1;
-    }
-         if (closestDepth <= 0.001)
+    }*/
+    if (closestDepth <= 0.001)
     {
         shadow = 1.0;
     }
  //   float shadow = currentDepth/closestDepth ;
-    
-    if (projCoords.z > 1.0)
+   
+    /*if (projCoords.z > 1.0)
+    {
+        shadow = 1.0;
+    }*/
+    if (isOutBounds == true)
     {
         shadow = 1.0;
     }

@@ -31,7 +31,7 @@ namespace monogameMinecraft
         public ChunkRenderer chunkRenderer;
         public Thread updateWorldThread;
         public Thread tryRemoveChunksThread;
-        public int renderDistance=256;
+        public int renderDistance=512;
         public GameStatus status;
          
         
@@ -258,7 +258,7 @@ namespace monogameMinecraft
                         el.DrawString(el.text);
                     }
                     _spriteBatch.End();
-                    _spriteBatch.Begin( );
+                   _spriteBatch.Begin( );
                     _spriteBatch.Draw(chunkRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                     _spriteBatch.End();
                     break;
