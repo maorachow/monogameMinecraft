@@ -24,9 +24,9 @@ sampler2D textureSampler = sampler_state
 sampler ShadowMapSampler = sampler_state
 {
     texture = <ShadowMap>;
-    magfilter = Point;
-    minfilter = Point;
-    mipfilter = Point;
+    magfilter = Linear;
+    minfilter = Linear;
+    mipfilter = Linear;
     AddressU = Wrap;
     AddressV = Wrap;
 };

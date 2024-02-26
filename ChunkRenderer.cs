@@ -46,7 +46,7 @@ namespace monogameMinecraft
         Matrix lightProjection = Matrix.CreateOrthographic(200, 200, 0.01f,150f);
         public void RenderAllChunks(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
-            
+            basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);

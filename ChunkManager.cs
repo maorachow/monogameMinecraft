@@ -263,35 +263,28 @@ namespace monogameMinecraft
 
         }
 
-        public static int GetBlockLandingPoint(Vector2 pos)
+       
+        public static int GetChunkLandingPoint(float x,float z) 
         {
-            Vector3Int intPos = Vector3Int.FloorToIntVec3(new Vector3(pos.X, 0f, pos.Y));
-            Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(new Vector3(pos.X, 0, pos.Y)));
-            if (chunkNeededUpdate == null)
+            Vector2Int intPos = new Vector2Int((int)x, (int)z);
+            Chunk locChunk=GetChunk(Vec3ToChunkPos(new Vector3(x,0,z)));
+            if (locChunk == null||locChunk.isMapGenCompleted==false)
             {
+              
                 return 100;
             }
-            Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
-
-            for (int i = 250; i > 40; i--)
+            Vector2Int chunkSpacePos = intPos - locChunk.chunkPos;
+            chunkSpacePos.x = MathHelper.Clamp(chunkSpacePos.x, 0, Chunk.chunkWidth - 1);
+            chunkSpacePos.y = MathHelper.Clamp(chunkSpacePos.y, 0, Chunk.chunkWidth - 1);
+            for (int i=200;i> 0; i--)
             {
-                if (chunkNeededUpdate.map[chunkSpacePos.x, i, chunkSpacePos.z] > 0 && chunkNeededUpdate.map[chunkSpacePos.x, i, chunkSpacePos.z] < 100)
+                if (locChunk.map[chunkSpacePos.x, i-1, chunkSpacePos.y] != 0)
                 {
-                    Debug.WriteLine("get");
                     return i;
                 }
-                else
-                {
-                    continue;
-                }
-
             }
-            Debug.WriteLine("noneget2");
-            Debug.WriteLine("noneget");
-            Debug.WriteLine(chunkSpacePos.x + " " + chunkSpacePos.y + " " + chunkSpacePos.z);
+         
             return 100;
-
-
 
         }
         public static void SetBlockWithUpdate(Vector3 pos, short blockID)

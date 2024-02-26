@@ -27,14 +27,14 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     float4 worldPosition = mul(input.Position, World);
     float4 projectionPosition = mul(worldPosition, LightSpaceMat);
     output.Position = projectionPosition;
-    output.Depth = output.Position.zw;
+    output.Depth.x = output.Position.z/output.Position.w;
     return output;
 }
 
 PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
 {
     PixelShaderOutput output = (PixelShaderOutput) 0;
-    output.Color = float4(input.Depth.x / input.Depth.y, input.Depth.x / input.Depth.y, input.Depth.x / input.Depth.y, 1);
+    output.Color = float4(input.Depth.x , input.Depth.x , input.Depth.x  , 1);
     return output;
 }
 technique BlockTechnique

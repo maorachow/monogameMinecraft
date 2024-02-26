@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using monogameMinecraft;
 using System.Threading;
 using System.Collections.Generic;
+//using System.Numerics;
 
 namespace monogameMinecraft
 {
@@ -33,7 +34,8 @@ namespace monogameMinecraft
         public Thread tryRemoveChunksThread;
         public int renderDistance=512;
         public GameStatus status;
-         
+         public EntityRenderer entityRenderer;
+       
         
         public MinecraftGame()
         {
@@ -90,8 +92,11 @@ namespace monogameMinecraft
             //  chunkEffect = Content.Load<Effect>("blockeffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect, chunkShadowEffect);
             chunkRenderer.SetTexture(terrainTex);
+           
+            entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, new AlphaTestEffect(GraphicsDevice), Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"));
             GamePlayer.ReadPlayerData(gamePlayer,this);
-
+            EntityBeh.InitEntityList();
+            EntityBeh.SpawnNewEntity(new Vector3(0, 100, 0), 0f, 0f, 0f, 0, this);
              
         }
 
@@ -167,7 +172,7 @@ namespace monogameMinecraft
               //  Exit();
              //   Environment.Exit(0);
             }
-
+                    
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.inGameUIs)
@@ -176,7 +181,8 @@ namespace monogameMinecraft
                     }
                     _spriteBatch.End();
                     // TODO: Add your update logic here
-
+                    EntityManager.UpdateAllEntity((float)gameTime.ElapsedGameTime.TotalSeconds);
+                    EntityManager.TrySpawnNewZombie(this);
                     gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
                     ProcessPlayerKeyboardInput(gameTime);
 
@@ -205,6 +211,10 @@ namespace monogameMinecraft
             var kState = Keyboard.GetState();
             var mState = Mouse.GetState();
             Vector3 playerVec = new Vector3(0f, 0f,0f);
+            if(kState.IsKeyDown(Keys.G))
+            {
+                EntityBeh.SpawnNewEntity(new Vector3(0, 100, 0), 0, 0, 0, 0, this);
+            }
             if (kState.IsKeyDown(Keys.W))
             {
                 playerVec.Z = 1f;
@@ -248,9 +258,33 @@ namespace monogameMinecraft
                     GraphicsDevice.Clear(Color.CornflowerBlue);
                     // Debug.WriteLine(ChunkManager.chunks.Count);
                     ProcessPlayerMouseInput();
+                
+
+
+
+                   
+
+
+
                     GraphicsDevice.DepthStencilState= DepthStencilState.Default;
+                     
                     chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
+
+                    /*        foreach (var mesh in zombieModel.Meshes)
+                           {
+                               foreach (BasicEffect effect in mesh.Effects)
+                               {
+                              //     effect.EnableDefaultLighting();
+                               //    effect.AmbientLightColor = new Vector3(1f, 0, 0);
+                                   effect.View = gamePlayer.cam.GetViewMatrix();
+                                   effect.World = Matrix.CreateTranslation(new Vector3(0,89,0));
+                                   effect.Projection = gamePlayer.cam.projectionMatrix;
+                               }
+                               mesh.Draw();
+                           }*/
+                    entityRenderer.Draw();
                     GraphicsDevice.DepthStencilState = DepthStencilState.None;
+            
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.inGameUIs)

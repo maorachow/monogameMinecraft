@@ -162,12 +162,31 @@ namespace monogameMinecraft
 
 
         }
-        public void BreakBlock()
+        public bool TryHitEntity()
+        {
+            Microsoft.Xna.Framework.Ray ray = new Microsoft.Xna.Framework.Ray(cam.position, cam.front);
+            foreach(var entity in EntityBeh.worldEntities)
+            {
+                if(ray.Intersects(entity.entityBounds)<=4f) {
+                    EntityBeh.HurtEntity(entity.entityID, 4f, cam.position);
+
+                    return true;
+                }
+            }
+            return false;
+        }
+        public bool BreakBlock()
         {
             Ray ray = new Ray(cam.position, cam.front);
             Vector3 blockPoint = ChunkManager.RaycastFirstPosition(ray, 5f);
+          
             ChunkManager.SetBlockWithUpdate(blockPoint,0);
             GetBlocksAround(playerBounds);
+            if ((blockPoint - cam.position).Length() <= 4.8f)
+            {
+                return true;
+            }
+            return false;
         }
         public void PlaceBlock()
         {
@@ -351,7 +370,11 @@ namespace monogameMinecraft
             }
             if (breakBlockCD <= 0f && mState.LeftButton == ButtonState.Pressed)
             {
-                BreakBlock();
+                bool isEntityHit = TryHitEntity(); 
+                if (!isEntityHit)
+                {
+                   BreakBlock();
+                }
                 breakBlockCD = 0.3f;
             }
             if (breakBlockCD <= 0f && mState.RightButton == ButtonState.Pressed)
