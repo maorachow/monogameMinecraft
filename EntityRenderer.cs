@@ -8,116 +8,204 @@ using System.Linq;
  
 using System.Text;
 using System.Threading.Tasks;
- 
+
 namespace monogameMinecraft
 {
     public class EntityRenderer
     {
         public Effect basicShader;
+        public Effect shadowMapShader;
         public GraphicsDevice device;
         public Model zombieModel;
         public Model zombieModelRef;
         public GamePlayer player;
         public Texture2D zombieTex;
-        public EntityRenderer(MinecraftGame game,GraphicsDevice device,GamePlayer player,Effect shader,Model model,Texture2D zombieTex,Model zombieModelRef)
+        public static MinecraftGame game;
+        public ShadowRenderer shadowRenderer;
+        public EntityRenderer(MinecraftGame game, GraphicsDevice device, GamePlayer player, Effect shader, Model model, Texture2D zombieTex, Model zombieModelRef, Effect shadowmapShader, ShadowRenderer sr)
         {
             this.device = device;
-            this.basicShader = shader;
-            this.zombieModel = model;
+            basicShader = shader;
+            zombieModel = model;
             this.zombieModelRef = zombieModelRef;
             this.player = player;
+            this.shadowMapShader = shadowmapShader;
             this.zombieTex = zombieTex;
-            
+            this.shadowRenderer = sr;
+            EntityRenderer.game = game;
+
+
         }
 
         public void Draw()
         {
-        //    basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
-         //   basicShader.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
-     //      
-        //    basicShader.Parameters["Texture"].SetValue(zombieTex);
+            //    basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
+            //   basicShader.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
+            //      
+            basicShader.Parameters["TextureE"].SetValue(zombieTex);
+            basicShader.Parameters["ShadowMapC"].SetValue(shadowRenderer.shadowMapTarget);
+            basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
 
-     /*       foreach (var bone in zombieModel.Bones) {
-                Debug.WriteLine(bone.Name);        
-
-              foreach (var mesh in bone.Meshes)
-                {
-                    foreach(var meshPart in mesh.MeshParts)
-                    {
-                        meshPart.Effect = basicShader;
-                    }
-                
-                 //   mesh.Draw();
-                }
-            }*/
-      //      zombieModel.Bones["head"].Transform = Matrix.CreateScale(0.5f);
-       //    
-         foreach(var entity in EntityBeh.worldEntities)
+            //      zombieModel.Bones["head"].Transform = Matrix.CreateScale(0.5f);
+           
+            BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);  
+            foreach (var entity in EntityBeh.worldEntities)
             {
-                switch(entity.typeID)
+                if(frustum.Intersects(entity.entityBounds))
+                {
+                switch (entity.typeID)
                 {
                     case 0:
                         DrawZombie(entity);
                         break;
                 }
+                }
+                
             }
-         /*   foreach (ModelBone bone in zombieModel.Bones)
-                {
-                foreach(var mesh in bone.Meshes)
-                {
-                foreach (Effect effect in mesh.Effects)
-                    {
-                        //effect.EnableDefaultLighting();
-                       
-                        effect.Parameters["View"].SetValue(player.cam.GetViewMatrix());
-                        effect.Parameters["World"].SetValue(world*bone.ModelTransform);
-                        effect.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
-                }
-                mesh.Draw();
-                }
-                  
-                   
-                }*/
 
-            }
-        public void DrawZombie(EntityBeh entity)
+
+        }
+        public static Matrix[] sharedDrawBoneMatrices;
+        public void DrawModel(Model model, Matrix world, Matrix view, Matrix projection)
         {
-           // Debug.WriteLine(zombieModelRef.Equals(zombieModel));
-            Matrix world = (Matrix.CreateTranslation(entity.position));
-            //              Debug.WriteLine(entity.rotationX + "  " + entity.rotationY + "  " + entity.rotationZ);
-            if(entity.isEntityHurt)
+            foreach (var bone in model.Bones)
             {
-            foreach (ModelMesh mesh in zombieModel.Meshes)
-            {
-                foreach (Effect effect in mesh.Effects)
+
+
+                foreach (var mesh in bone.Meshes)
                 {
-                    BasicEffect basicEffect = effect as BasicEffect;
-                    basicEffect.DiffuseColor = Color.Red.ToVector3();
-                }
-       
-            }
-            }
-            else
-            {
-                foreach (ModelMesh mesh in zombieModel.Meshes)
-                {
-                    foreach (Effect effect in mesh.Effects)
+                    foreach (var meshPart in mesh.MeshParts)
                     {
-                        BasicEffect basicEffect = effect as BasicEffect;
-                        basicEffect.DiffuseColor = Color.White.ToVector3();
+                        meshPart.Effect = basicShader;
                     }
 
+
                 }
             }
-           
+            int count = model.Bones.Count;
+            if (sharedDrawBoneMatrices == null || sharedDrawBoneMatrices.Length < count)
+            {
+                sharedDrawBoneMatrices = new Matrix[count];
+            }
+
+            model.CopyAbsoluteBoneTransformsTo(sharedDrawBoneMatrices);
+            foreach (ModelMesh mesh in model.Meshes)
+            {
+                foreach (Effect effect in mesh.Effects)
+                {
+
+                    effect.Parameters["World"].SetValue(sharedDrawBoneMatrices[mesh.ParentBone.Index] * world);
+                    effect.Parameters["View"].SetValue(view);
+                    effect.Parameters["Projection"].SetValue(projection);
+
+                }
+
+                mesh.Draw();
+            }
+        }
+
+        public void DrawModelShadow(Model model, Matrix world, Matrix lightSpaceMat, Effect shadowMapShader)
+        {
+
+            foreach (var bone in model.Bones)
+            {
+
+
+                foreach (var mesh in bone.Meshes)
+                {
+                    foreach (var meshPart in mesh.MeshParts)
+                    {
+                        meshPart.Effect = shadowMapShader;
+                    }
+
+
+                }
+            }
+            int count = model.Bones.Count;
+            if (sharedDrawBoneMatrices == null || sharedDrawBoneMatrices.Length < count)
+            {
+                sharedDrawBoneMatrices = new Matrix[count];
+            }
+
+            model.CopyAbsoluteBoneTransformsTo(sharedDrawBoneMatrices);
+            foreach (ModelMesh mesh in model.Meshes)
+            {
+                foreach (Effect effect in mesh.Effects)
+                {
+
+                    effect.Parameters["World"].SetValue(sharedDrawBoneMatrices[mesh.ParentBone.Index] * world);
+
+                    effect.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
+                }
+
+                mesh.Draw();
+            }
+        }
+        public void DrawZombieShadow(EntityBeh entity,Matrix lightSpaceMat,Effect shadowMapShader)
+        {
+            Matrix world = (Matrix.CreateTranslation(entity.position));
             zombieModel.Bones["head"].Transform = Matrix.CreateFromYawPitchRoll(MathHelper.ToRadians(entity.rotationY), -MathHelper.ToRadians(entity.rotationX), 0) * zombieModelRef.Bones["head"].Transform;
-            zombieModel.Bones["body"].Transform = Matrix.CreateFromQuaternion(entity.bodyQuat) * zombieModelRef.Bones["body"].Transform ;
-            zombieModel.Bones["rightLeg"].Transform=Matrix.CreateFromYawPitchRoll(0,MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime*6f)*entity.curSpeed*15f,-55f,55f)) ,0)*zombieModelRef.Bones["rightLeg"].Transform ;
-            zombieModel.Bones["leftLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, -MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime*6f)* entity.curSpeed  * 15f,-55f,55f)), 0) * zombieModelRef.Bones["leftLeg"].Transform;
-            zombieModel.Draw(world, player.cam.GetViewMatrix(), player.cam.projectionMatrix);
+            zombieModel.Bones["body"].Transform = Matrix.CreateFromQuaternion(entity.bodyQuat) * zombieModelRef.Bones["body"].Transform;
+            zombieModel.Bones["rightLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["rightLeg"].Transform;
+            zombieModel.Bones["leftLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, -MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["leftLeg"].Transform;
+            DrawModelShadow(zombieModel, world, lightSpaceMat, shadowMapShader);
         }
+        public void DrawZombie(EntityBeh entity)
+        {
+            // Debug.WriteLine(zombieModelRef.Equals(zombieModel));
+
+            //              Debug.WriteLine(entity.rotationX + "  " + entity.rotationY + "  " + entity.rotationZ);
+            foreach (var bone in zombieModel.Bones)
+            {
+
+
+                foreach (var mesh in bone.Meshes)
+                {
+                    foreach (var meshPart in mesh.MeshParts)
+                    {
+                        meshPart.Effect = basicShader;
+                    }
+
+
+                }
+            }
+
+                if (entity.isEntityHurt)
+                {
+                    foreach (ModelMesh mesh in zombieModel.Meshes)
+                    {
+                        foreach (Effect effect in mesh.Effects)
+                        {
+
+                            effect.Parameters["DiffuseColor"].SetValue(Color.Red.ToVector3());
+                        }
+
+                    }
+                }
+                else
+                {
+                    foreach (ModelMesh mesh in zombieModel.Meshes)
+                    {
+                        foreach (Effect effect in mesh.Effects)
+                        {
+                            effect.Parameters["DiffuseColor"].SetValue(Color.White.ToVector3());
+                        }
+
+                    }
+                }
+
+                Matrix world = (Matrix.CreateTranslation(entity.position));
+                zombieModel.Bones["head"].Transform = Matrix.CreateFromYawPitchRoll(MathHelper.ToRadians(entity.rotationY), -MathHelper.ToRadians(entity.rotationX), 0) * zombieModelRef.Bones["head"].Transform;
+                zombieModel.Bones["body"].Transform = Matrix.CreateFromQuaternion(entity.bodyQuat) * zombieModelRef.Bones["body"].Transform;
+                zombieModel.Bones["rightLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["rightLeg"].Transform;
+                zombieModel.Bones["leftLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, -MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["leftLeg"].Transform;
+                DrawModel(zombieModel, world, player.cam.GetViewMatrix(), player.cam.projectionMatrix);
+
+            }
             //      basicShader.Parameters["World"].SetValue(world * bone.Transform);
-           
-        }
+
     }
- 
+}
+
+
+

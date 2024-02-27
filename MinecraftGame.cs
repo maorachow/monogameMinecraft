@@ -27,6 +27,7 @@ namespace monogameMinecraft
         public SpriteBatch _spriteBatch;
         public Effect chunkSolidEffect;
         public Effect chunkShadowEffect;
+        public Effect entityEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
@@ -36,7 +37,7 @@ namespace monogameMinecraft
         public GameStatus status;
          public EntityRenderer entityRenderer;
        
-        
+        public ShadowRenderer shadowRenderer;
         public MinecraftGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -80,7 +81,7 @@ namespace monogameMinecraft
             ChunkManager.ReadJson();
             status = GameStatus.Started;
             gamePlayer = new GamePlayer(new Vector3(-0.3f, 100, -0.3f), new Vector3(0.3f, 101.8f, 0.3f), this);
-            chunkNSEffect=new AlphaTestEffect(GraphicsDevice);
+          
             updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread(renderDistance, gamePlayer,this));
             updateWorldThread.IsBackground = true;
             updateWorldThread.Start();
@@ -89,11 +90,16 @@ namespace monogameMinecraft
             tryRemoveChunksThread.Start();
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
             chunkShadowEffect = Content.Load<Effect>("createshadowmapeffect");
+            entityEffect = Content.Load<Effect>("entityeffect");
             //  chunkEffect = Content.Load<Effect>("blockeffect");
-            chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect, chunkShadowEffect);
+
+            chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null);
             chunkRenderer.SetTexture(terrainTex);
            
-            entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, new AlphaTestEffect(GraphicsDevice), Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"));
+            entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
+            shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer);
+            chunkRenderer.shadowRenderer = shadowRenderer;
+            entityRenderer.shadowRenderer = shadowRenderer;
             GamePlayer.ReadPlayerData(gamePlayer,this);
             EntityBeh.InitEntityList();
             EntityBeh.SpawnNewEntity(new Vector3(0, 100, 0), 0f, 0f, 0f, 0, this);
@@ -186,11 +192,11 @@ namespace monogameMinecraft
                     gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
                     ProcessPlayerKeyboardInput(gameTime);
 
-
+                   
                     break;
             }
-          
-            
+
+         
             //     Debug.WriteLine(gamePlayer.playerPos);
             //     Debug.WriteLine(gamePlayer.cam.Pitch+" "+ gamePlayer.cam.Yaw);
             //    Debug.WriteLine(gamePlayer.cam.position + " " + gamePlayer.cam.front+" "+gamePlayer.cam.up);
@@ -247,6 +253,16 @@ namespace monogameMinecraft
 
 
         }
+        public void RenderWorld()
+        {
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+
+            shadowRenderer.RenderShadow();
+            chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
+            entityRenderer.Draw();
+            chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
+            GraphicsDevice.DepthStencilState = DepthStencilState.None;
+        }
         protected override void Draw(GameTime gameTime)
         {
             if (!IsActive) return;
@@ -258,32 +274,15 @@ namespace monogameMinecraft
                     GraphicsDevice.Clear(Color.CornflowerBlue);
                     // Debug.WriteLine(ChunkManager.chunks.Count);
                     ProcessPlayerMouseInput();
-                
 
 
 
-                   
 
 
 
-                    GraphicsDevice.DepthStencilState= DepthStencilState.Default;
-                     
-                    chunkRenderer.RenderAllChunks(ChunkManager.chunks,gamePlayer);
+                    RenderWorld();
 
-                    /*        foreach (var mesh in zombieModel.Meshes)
-                           {
-                               foreach (BasicEffect effect in mesh.Effects)
-                               {
-                              //     effect.EnableDefaultLighting();
-                               //    effect.AmbientLightColor = new Vector3(1f, 0, 0);
-                                   effect.View = gamePlayer.cam.GetViewMatrix();
-                                   effect.World = Matrix.CreateTranslation(new Vector3(0,89,0));
-                                   effect.Projection = gamePlayer.cam.projectionMatrix;
-                               }
-                               mesh.Draw();
-                           }*/
-                    entityRenderer.Draw();
-                    GraphicsDevice.DepthStencilState = DepthStencilState.None;
+                    
             
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
@@ -293,7 +292,7 @@ namespace monogameMinecraft
                     }
                     _spriteBatch.End();
                    _spriteBatch.Begin( );
-                    _spriteBatch.Draw(chunkRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
+                    _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                     _spriteBatch.End();
                     break;
                     case GameStatus.Menu:

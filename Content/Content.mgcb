@@ -183,6 +183,12 @@
 /processorParam:TextureFormat=Compressed
 /build:defaultfont.spritefont
 
+#begin entityeffect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:entityeffect.fx
+
 #begin hotbar.png
 /importer:TextureImporter
 /processor:TextureProcessor
