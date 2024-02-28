@@ -119,7 +119,7 @@ float ShadowCalculation(float4 fragPosLightSpace,float3 normal)
     {
         shadow = 1;
     }*/
-    if (closestDepth <= 0.001)
+    if (closestDepth <= 0.01)
     {
         shadow = 1.0;
     }

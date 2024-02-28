@@ -173,8 +173,8 @@ namespace monogameMinecraft
                 {
                     return;
                 }
-            //    Thread.Sleep(50);
-                if (ChunkRenderer.isBusy == true)
+                Thread.Sleep(50);
+              if (ChunkRenderer.isBusy == true)
                 {
                     continue;
                 }

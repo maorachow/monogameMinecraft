@@ -386,7 +386,7 @@ namespace monogameMinecraft
             {
                 currentSelectedHotbar += (int)((mState.ScrollWheelValue - prevMouseState.ScrollWheelValue)/120f);
                 currentSelectedHotbar = MathHelper.Clamp(currentSelectedHotbar, 0, 8);
-                Debug.WriteLine(mState.ScrollWheelValue - prevMouseState.ScrollWheelValue);
+          //      Debug.WriteLine(mState.ScrollWheelValue - prevMouseState.ScrollWheelValue);
             }
         }
          public float breakBlockCD=0f;
@@ -418,10 +418,10 @@ namespace monogameMinecraft
         public float Yaw;
         public float Pitch;
         public float MovementSpeed;
-        public float MouseSensitivity =0.5f;
+        public float MouseSensitivity =0.3f;
         public void ProcessMouseMovement(float xoffset, float yoffset, bool constrainPitch = true)
         {
-            
+          
             xoffset *= MouseSensitivity;
             yoffset *= MouseSensitivity;
 
@@ -437,9 +437,9 @@ namespace monogameMinecraft
                 if (Pitch < -89.0f)
                     Pitch = -89.0f;
             }
-        updateCameraVectors();
+        
             // update Front, Right and Up Vectors using the updated Euler angles
-            
+              updateCameraVectors();
         }
         public void updateCameraVectors()
         {
@@ -450,8 +450,9 @@ namespace monogameMinecraft
             tmpfront.Z = MathF.Sin(MathHelper.ToRadians(Yaw)) * MathF.Cos(MathHelper.ToRadians(Pitch));
             horizontalFront=new Vector3(tmpfront.X,0,tmpfront.Z);
             horizontalFront.Normalize();
-            tmpfront.Normalize();
+           
             front = tmpfront;
+            front.Normalize();
             // also re-calculate the Right and Up vector
             Vector3 tmpright =(Vector3.Cross(front, worldUp)); 
             tmpright.Normalize();
@@ -465,7 +466,7 @@ namespace monogameMinecraft
         }
         public Matrix GetViewMatrix()
         {
-           // viewMatrix = Matrix.CreateLookAt(position, position + front, up);
+            viewMatrix = Matrix.CreateLookAt(position, position + front, up);
             return viewMatrix;
         }
     }

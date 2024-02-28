@@ -94,14 +94,12 @@ namespace monogameMinecraft
             basicShader.Parameters["fogStart"].SetValue(256.0f);
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
         
-            // shadowmapShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-            //     RenderShadow(RenderingChunks, player,lightSpaceMat);
-
+        
             isBusy = true;
             BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
 
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-            //    EntityRenderer.basicShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
+      
             basicShader.Parameters["ShadowMap"].SetValue(shadowRenderer.shadowMapTarget);
  
             foreach (var chunk in RenderingChunks)

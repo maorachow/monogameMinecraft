@@ -48,7 +48,7 @@ namespace monogameMinecraft
             Window.ClientSizeChanged += OnResize;
             
                this.IsFixedTimeStep = false;
-               //   TargetElapsedTime = System.TimeSpan.FromMilliseconds(16);
+          //       TargetElapsedTime = System.TimeSpan.FromMilliseconds(5);
             //this.OnExiting += OnExit;
         }
     
@@ -102,7 +102,11 @@ namespace monogameMinecraft
             entityRenderer.shadowRenderer = shadowRenderer;
             GamePlayer.ReadPlayerData(gamePlayer,this);
             EntityBeh.InitEntityList();
-            EntityBeh.SpawnNewEntity(new Vector3(0, 100, 0), 0f, 0f, 0f, 0, this);
+
+            // EntityBeh.SpawnNewEntity(new Vector3(0, 100, 0), 0f, 0f, 0f, 0, this);
+            EntityManager.ReadEntityData();
+            Debug.WriteLine(EntityBeh.entityDataReadFromDisk.Count);
+            EntityBeh.SpawnEntityFromData(this);
              
         }
 
@@ -115,6 +119,7 @@ namespace monogameMinecraft
             {
             c.Value.Dispose();
             }*/
+            EntityManager.SaveWorldEntityData();
             ChunkManager.isJsonReadFromDisk=false;
             ChunkManager.chunks .Clear();
             ChunkManager.chunkDataReadFromDisk.Clear();
@@ -160,6 +165,7 @@ namespace monogameMinecraft
         protected override void Update(GameTime gameTime)
         {
             if(!IsActive) return;
+          //  Draw1(gameTime);
             switch (status)
             {
                 case GameStatus.Menu:
@@ -178,25 +184,26 @@ namespace monogameMinecraft
               //  Exit();
              //   Environment.Exit(0);
             }
-                    
-                    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
+                    ProcessPlayerKeyboardInput(gameTime);
+
+                    ProcessPlayerMouseInput();
+                    gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
+                    //    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.inGameUIs)
                     {
                         el.Update();
                     }
-                    _spriteBatch.End();
+                //    _spriteBatch.End();
                     // TODO: Add your update logic here
                     EntityManager.UpdateAllEntity((float)gameTime.ElapsedGameTime.TotalSeconds);
                     EntityManager.TrySpawnNewZombie(this);
-                    gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
-                    ProcessPlayerKeyboardInput(gameTime);
-
+                
                    
                     break;
             }
 
-         
+            
             //     Debug.WriteLine(gamePlayer.playerPos);
             //     Debug.WriteLine(gamePlayer.cam.Pitch+" "+ gamePlayer.cam.Yaw);
             //    Debug.WriteLine(gamePlayer.cam.position + " " + gamePlayer.cam.front+" "+gamePlayer.cam.up);
@@ -217,10 +224,7 @@ namespace monogameMinecraft
             var kState = Keyboard.GetState();
             var mState = Mouse.GetState();
             Vector3 playerVec = new Vector3(0f, 0f,0f);
-            if(kState.IsKeyDown(Keys.G))
-            {
-                EntityBeh.SpawnNewEntity(new Vector3(0, 100, 0), 0, 0, 0, 0, this);
-            }
+        
             if (kState.IsKeyDown(Keys.W))
             {
                 playerVec.Z = 1f;
@@ -256,11 +260,12 @@ namespace monogameMinecraft
         public void RenderWorld()
         {
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-
-            shadowRenderer.RenderShadow();
+           shadowRenderer.UpdateLightMatrices(gamePlayer);
+            shadowRenderer.RenderShadow(gamePlayer);
             chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
             entityRenderer.Draw();
             chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
+            
             GraphicsDevice.DepthStencilState = DepthStencilState.None;
         }
         protected override void Draw(GameTime gameTime)
@@ -270,20 +275,11 @@ namespace monogameMinecraft
             switch (status)
             {
                 case GameStatus.Started:
-        //            Debug.WriteLine("started");
+                    //            Debug.WriteLine("started");
                     GraphicsDevice.Clear(Color.CornflowerBlue);
                     // Debug.WriteLine(ChunkManager.chunks.Count);
-                    ProcessPlayerMouseInput();
-
-
-
-
-
-
+                  
                     RenderWorld();
-
-                    
-            
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.inGameUIs)
@@ -291,25 +287,26 @@ namespace monogameMinecraft
                         el.DrawString(el.text);
                     }
                     _spriteBatch.End();
-                   _spriteBatch.Begin( );
+                    _spriteBatch.Begin();
                     _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                     _spriteBatch.End();
                     break;
-                    case GameStatus.Menu:
+                case GameStatus.Menu:
                     GraphicsDevice.Clear(Color.CornflowerBlue);
-                    _spriteBatch.Begin(samplerState:SamplerState.PointWrap);
+                    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.menuUIs)
                     {
                         el.DrawString(el.text);
                     }
-                         _spriteBatch.End();
+                    _spriteBatch.End();
                     break;
 
             }
-           
-        //    _
             base.Draw(gameTime);
+            //    _
+            
         }
+         
     }
 }
