@@ -46,11 +46,11 @@ namespace monogameMinecraft
         public void RenderAllChunksOpq(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
             basicShader.Parameters["Texture"].SetValue(atlas);
-            basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
+            basicShader.Parameters["View"].SetValue(player.cam.viewMatrix);
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
-         
+            
            // shadowmapShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
        //     RenderShadow(RenderingChunks, player,lightSpaceMat);
 
@@ -89,7 +89,7 @@ namespace monogameMinecraft
         public void RenderAllChunksTransparent(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
             basicShader.Parameters["Texture"].SetValue(atlas);
-            basicShader.Parameters["View"].SetValue(player.cam.GetViewMatrix());
+            basicShader.Parameters["View"].SetValue(player.cam.viewMatrix);
             basicShader.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
@@ -140,11 +140,9 @@ namespace monogameMinecraft
         public static bool isBusy = false;
        public void RenderShadow(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks,GamePlayer player,Matrix lightSpaceMat,Effect shadowmapShader)
         {
-             
-           
-        //    device.SetRenderTarget(shadowMapTarget);
-            
-         //    device.Clear(Color.Green);
+
+            shadowmapShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
+       
             foreach (var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;
@@ -157,7 +155,7 @@ namespace monogameMinecraft
                 
                 if (c.isReadyToRender == true && c.disposed == false)
                 {
-                        RenderSingleChunkShadow(c, player,shadowmapShader);
+                        RenderSingleChunkShadow(c,shadowmapShader);
                 }
                 }
               
@@ -171,7 +169,7 @@ namespace monogameMinecraft
             basicShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);*/
         }
        
-        void RenderSingleChunkShadow(Chunk c, GamePlayer player ,Effect shadowmapShader)
+        void RenderSingleChunkShadow(Chunk c,Effect shadowmapShader)
         {
              Matrix world=(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
             shadowmapShader.Parameters["World"].SetValue(world); 

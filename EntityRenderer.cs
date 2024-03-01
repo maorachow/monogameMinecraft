@@ -199,7 +199,7 @@ namespace monogameMinecraft
                 zombieModel.Bones["body"].Transform = Matrix.CreateFromQuaternion(entity.bodyQuat) * zombieModelRef.Bones["body"].Transform;
                 zombieModel.Bones["rightLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["rightLeg"].Transform;
                 zombieModel.Bones["leftLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, -MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["leftLeg"].Transform;
-                DrawModel(zombieModel, world, player.cam.GetViewMatrix(), player.cam.projectionMatrix);
+                DrawModel(zombieModel, world, player.cam.viewMatrix, player.cam.projectionMatrix);
 
             }
             //      basicShader.Parameters["World"].SetValue(world * bone.Transform);

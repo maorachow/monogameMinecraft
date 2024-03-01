@@ -28,6 +28,7 @@ namespace monogameMinecraft
         public static bool isPlayerDataSaved = false;
         public bool isChunkNeededUpdate=false;
         public Chunk curChunk;
+        
         public static void ReadPlayerData(GamePlayer player,Game game)
         {
        
@@ -215,9 +216,13 @@ namespace monogameMinecraft
                 float movZ = dz;
                 if (blocksAround.Count == 0)
                 {
-               //     playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,0, dy, 0);
-            //        playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,dx, 0, 0);
-             //       playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,0, 0, dz);
+                    playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,0, dy, 0);
+                    playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,dx, 0, 0);
+                    playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,0, 0, dz);
+                    playerPos = GetBoundingBoxCenter(playerBounds);
+                    cam.position = playerPos + new Vector3(0f, 0.6f, 0f);
+               
+                    return;
                 }
 
 
@@ -257,7 +262,8 @@ namespace monogameMinecraft
         //    Debug.WriteLine(dx + " " + movX + " " + dy + " " + movY + " " + dz + " " + movZ) ;
                 playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds, 0, 0, dz);
             playerPos = GetBoundingBoxCenter(playerBounds);
-            cam.position = playerPos+new Vector3(0f,0.6f,0f);
+            cam.position = playerPos + new Vector3(0f, 0.6f, 0f);
+         
         }
         public Vector3Int playerCurIntPos;
         public Vector3Int playerLastIntPos;
@@ -412,7 +418,7 @@ namespace monogameMinecraft
         public Vector3 horizontalFront;
         public Vector3 horizontalRight;
         public static Vector3 worldUp=new Vector3(0f,1f,0f);
-        public Matrix viewMatrix;
+        public Matrix viewMatrix { get {return Matrix.CreateLookAt(position, position + front, up); } set {value= Matrix.CreateLookAt(position, position + front, up); } }
         //public Matrix viewMatrix;
         public Matrix projectionMatrix;
         public float Yaw;
@@ -464,10 +470,11 @@ namespace monogameMinecraft
             up= tmpup;
             viewMatrix = Matrix.CreateLookAt(position, position + front, up);
         }
-        public Matrix GetViewMatrix()
+   /*     public Matrix GetViewMatrix()
         {
             viewMatrix = Matrix.CreateLookAt(position, position + front, up);
+            Debug.WriteLine("getmat");
             return viewMatrix;
-        }
+        }*/
     }
 }

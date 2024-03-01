@@ -33,7 +33,7 @@ namespace monogameMinecraft
         public ChunkRenderer chunkRenderer;
         public Thread updateWorldThread;
         public Thread tryRemoveChunksThread;
-        public int renderDistance=512;
+        public int renderDistance=128;
         public GameStatus status;
          public EntityRenderer entityRenderer;
        
@@ -48,7 +48,7 @@ namespace monogameMinecraft
             Window.ClientSizeChanged += OnResize;
             
                this.IsFixedTimeStep = false;
-          //       TargetElapsedTime = System.TimeSpan.FromMilliseconds(5);
+        //         TargetElapsedTime = System.TimeSpan.FromMilliseconds(33);
             //this.OnExiting += OnExit;
         }
     
@@ -107,7 +107,8 @@ namespace monogameMinecraft
             EntityManager.ReadEntityData();
             Debug.WriteLine(EntityBeh.entityDataReadFromDisk.Count);
             EntityBeh.SpawnEntityFromData(this);
-             
+          
+            
         }
 
         void QuitGameplay()
@@ -123,6 +124,7 @@ namespace monogameMinecraft
             ChunkManager.isJsonReadFromDisk=false;
             ChunkManager.chunks .Clear();
             ChunkManager.chunkDataReadFromDisk.Clear();
+            EntityBeh.InitEntityList();
             GC.Collect();
            
             
@@ -185,9 +187,12 @@ namespace monogameMinecraft
              //   Environment.Exit(0);
             }
                     ProcessPlayerKeyboardInput(gameTime);
-
+                  
                     ProcessPlayerMouseInput();
+                   
+
                     gamePlayer.UpdatePlayer((float)gameTime.ElapsedGameTime.TotalSeconds);
+                  
                     //    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.inGameUIs)
@@ -253,6 +258,7 @@ namespace monogameMinecraft
                 playerVec.Y =- 1f;
             }
             gamePlayer.ProcessPlayerInputs(playerVec, (float)gameTime.ElapsedGameTime.TotalSeconds, kState,mState,lastMouseState);
+         
             lastMouseState = mState;
 
 
@@ -260,12 +266,16 @@ namespace monogameMinecraft
         public void RenderWorld()
         {
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-           shadowRenderer.UpdateLightMatrices(gamePlayer);
-            shadowRenderer.RenderShadow(gamePlayer);
+            shadowRenderer.UpdateLightMatrices(gamePlayer);
+            shadowRenderer.RenderShadow(gamePlayer);  
+           
             chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
+            
             entityRenderer.Draw();
+           
             chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
             
+
             GraphicsDevice.DepthStencilState = DepthStencilState.None;
         }
         protected override void Draw(GameTime gameTime)
@@ -278,7 +288,7 @@ namespace monogameMinecraft
                     //            Debug.WriteLine("started");
                     GraphicsDevice.Clear(Color.CornflowerBlue);
                     // Debug.WriteLine(ChunkManager.chunks.Count);
-                  
+                    gamePlayer.cam.updateCameraVectors();
                     RenderWorld();
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 

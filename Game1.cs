@@ -32,7 +32,7 @@ namespace monogameMinecraft
 
             Window.ClientSizeChanged += OnResize;
             //   Window.KeyDown += OnResize;
-            TargetElapsedTime = System.TimeSpan.FromMilliseconds(0.1);
+            TargetElapsedTime = System.TimeSpan.FromMilliseconds(33);
         }
 
         private void OnResize(object sender, InputKeyEventArgs e)
@@ -95,12 +95,12 @@ namespace monogameMinecraft
             Vector2 playerVec=new Vector2(0f,0f);
             if (kState.IsKeyDown(Keys.W))
             {
-                playerVec.Y = 1f;
+                playerVec.Y = -10f;
             }
 
             if (kState.IsKeyDown(Keys.S))
             {
-                playerVec.Y = -1f;
+                playerVec.Y = 10f;
             }
 
             if (kState.IsKeyDown(Keys.A))
@@ -112,7 +112,8 @@ namespace monogameMinecraft
             {
                 playerVec.X = 1f;
             }
-         //   gamePlayer.ProcessPlayerInputs(playerVec,(float) gameTime.ElapsedGameTime.TotalSeconds);
+            gamePlayer.cam.position +=new Vector3( playerVec.X,0,playerVec.Y )*(float) gameTime.ElapsedGameTime.TotalSeconds;
+            gamePlayer.cam.updateCameraVectors();
             var mState=Mouse.GetState();
             gamePlayer.cam.ProcessMouseMovement( mState.X-lastMouseX ,lastMouseY-mState.Y);
             lastMouseY = mState.Y;
@@ -142,6 +143,7 @@ namespace monogameMinecraft
 
         protected override void Draw(GameTime gameTime)
         {
+            gamePlayer.cam.updateCameraVectors();
             GraphicsDevice.Clear(Color.CornflowerBlue);
             GraphicsDevice.SetVertexBuffer(vertexBuffer);
         

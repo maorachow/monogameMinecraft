@@ -7,7 +7,7 @@ class Program
    static void Main(string[] args)
     {
        
-        var game = new monogameMinecraft.MinecraftGame();
+        var game = new MinecraftGame();
         game.Run();
     }
 }

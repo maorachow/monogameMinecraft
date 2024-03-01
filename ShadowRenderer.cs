@@ -11,6 +11,7 @@ namespace monogameMinecraft
 {
     public class ShadowRenderer
     {
+        
         public MinecraftGame game;
         public GraphicsDevice device;
         public RenderTarget2D shadowMapTarget;
@@ -33,12 +34,12 @@ namespace monogameMinecraft
         }
         public void UpdateLightMatrices(GamePlayer player)
         {
-            lightView = Matrix.CreateLookAt(player.cam.position + new Vector3(10, 50, 30), player.cam.position, Vector3.UnitY);
+            lightView = Matrix.CreateLookAt(player.playerPos+ new Vector3(10, 50, 30), player.playerPos, Vector3.UnitY);
             lightSpaceMat = lightView * lightProjection;
         }
         public void  RenderShadow(GamePlayer player)
         {
-            UpdateLightMatrices(player);
+         //   UpdateLightMatrices(player);
             device.SetRenderTarget(shadowMapTarget);
 
             chunkRenderer.RenderShadow(ChunkManager.chunks, player, lightSpaceMat, shadowMapShader);

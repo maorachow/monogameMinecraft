@@ -33,6 +33,8 @@ namespace monogameMinecraft
         public Vector3 entityMotionVec;
         public MinecraftGame game;
         public Vector3 targetPos;
+        public Vector3Int lastIntPos;
+        public bool isNeededUpdateBlock;
         public float entityGravity;
         public float entityLifetime;
         public float curSpeed;
@@ -109,6 +111,8 @@ namespace monogameMinecraft
 
         }
         Vector3 lastPos;
+        public Chunk curChunk;
+        public bool lastChunkIsReadyToRender;
         public float Vec3Magnitude(Vector3 pos)
         {
             return (float)Math.Sqrt(pos.X * pos.X + pos.Y * pos.Y + pos.Z * pos.Z);
@@ -128,8 +132,43 @@ namespace monogameMinecraft
              curSpeed =  MathHelper.Lerp(curSpeed,(new Vector2(position.X,position.Z) - new Vector2(lastPos.X, lastPos.Z)).Length()/deltaTime,5f*deltaTime);
             //        Debug.WriteLine(curSpeed);
             lastPos = position;
-            GetBlocksAround(entityBounds);
-             
+                    Vector3Int intPos = Vector3Int.FloorToIntVec3(position);
+                    
+                    curChunk = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(position));
+                    
+                    
+                    if(curChunk != null)
+                    {
+                        if ( lastChunkIsReadyToRender!=curChunk.isReadyToRender&&(lastChunkIsReadyToRender==false&&curChunk.isReadyToRender==true))
+                    {
+                        Debug.WriteLine("update");
+                        isNeededUpdateBlock = true;
+                  //      GetBlocksAround(entityBounds);
+                    }
+                    }
+                   
+                    if(curChunk!=null)
+                    {
+                    lastChunkIsReadyToRender = curChunk.isReadyToRender;
+                    }
+                    
+
+
+
+
+                    if (lastIntPos!=intPos)
+                    {
+                        isNeededUpdateBlock = true;
+                    }
+                    lastIntPos = intPos;
+                    if(isNeededUpdateBlock)
+                    {
+                        GetBlocksAround(entityBounds);
+                        isNeededUpdateBlock= false;
+                    }
+                    GetEntitiesAround();
+
+
             if (Vector3.Distance(position, targetPos) > 1f)
             {
                 Vector3 movePos = new Vector3(targetPos.X - position.X, 0, targetPos.Z - position.Z);
@@ -291,13 +330,14 @@ namespace monogameMinecraft
             float movX = dx;
             float movY = dy;
             float movZ = dz;
-        
 
 
+            List<BoundingBox> allBounds = new List<BoundingBox>();
+            allBounds.AddRange(entitiyBoundsAround);
+            allBounds.AddRange(blocksAround);
 
 
-
-            foreach (var bb in blocksAround)
+            foreach (var bb in allBounds)
             {
                 dy = BlockCollidingBoundingBoxHelper.calculateYOffset(bb,entityBounds, dy);
             }
@@ -315,20 +355,35 @@ namespace monogameMinecraft
             }
 
           
-            foreach (var bb in blocksAround)
+            foreach (var bb in allBounds)
             {
                 dx =  BlockCollidingBoundingBoxHelper.calculateXOffset(bb,entityBounds, dx);
             }
 
             entityBounds = BlockCollidingBoundingBoxHelper.offset(entityBounds,dx, 0, 0);
 
-            foreach (var bb in blocksAround)
+            foreach (var bb in allBounds)
             {
                 dz =  BlockCollidingBoundingBoxHelper.calculateZOffset(bb,entityBounds, dz);
             }
 
             entityBounds = BlockCollidingBoundingBoxHelper.offset(entityBounds,0, 0, dz);
             position = new Vector3((entityBounds.Min.X + entityBounds.Max.X) / 2f, entityBounds.Min.Y, (entityBounds.Min.Z + entityBounds.Max.Z) / 2f);
+        }
+        public List<BoundingBox> entitiyBoundsAround;
+        public void GetEntitiesAround()
+        {
+            entitiyBoundsAround=new List<BoundingBox>();
+            foreach (var entity in EntityBeh.worldEntities)
+            {
+                if (entity != this)
+                {
+                    if (MathF.Abs(entity.position.X - position.X) < 10f && MathF.Abs(entity.position.Y - position.Y) < 10f && MathF.Abs(entity.position.Z - position.Z) < 10f)
+                    {
+                        this.entitiyBoundsAround.Add(new BoundingBox(entity.entityBounds.Min, entity.entityBounds.Max));
+                    }
+                }
+            }
         }
         public List< BoundingBox> GetBlocksAround(BoundingBox aabb)
         {
@@ -356,16 +411,7 @@ namespace monogameMinecraft
                     }
                 }
             }
-            foreach(var entity in EntityBeh.worldEntities)
-            {
-                if (entity != this)
-                {
-                    if(MathF.Abs(entity.position.X-position.X)<10f&& MathF.Abs(entity.position.Y - position.Y) < 10f&& MathF.Abs(entity.position.Z - position.Z) < 10f)
-                    {
-                        this.blocksAround.Add(new BoundingBox(entity.entityBounds.Min, entity.entityBounds.Max)); 
-                    }
-                }
-            }
+          
 
             return this.blocksAround;
 

@@ -213,10 +213,12 @@ namespace monogameMinecraft
         {
             Vector3Int intPos = Vector3Int.FloorToIntVec3(pos);
             Chunk chunkNeededUpdate = ChunkManager.GetChunk(ChunkManager.Vec3ToChunkPos(pos));
+          
             if (chunkNeededUpdate == null || chunkNeededUpdate.isMapGenCompleted == false)
             { 
                 return 1;
             }
+           
             Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
             if (chunkSpacePos.x >= 0 && chunkSpacePos.x < Chunk.chunkWidth && chunkSpacePos.y < Chunk.chunkHeight && chunkSpacePos.y >= 0 && chunkSpacePos.z >= 0 && chunkSpacePos.z < Chunk.chunkWidth)
             {
@@ -226,6 +228,8 @@ namespace monogameMinecraft
             {
                 return 0;
             }
+            
+            
 
         }
         public static short RaycastFirstBlockID(Ray ray,float distance)
