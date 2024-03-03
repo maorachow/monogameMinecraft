@@ -143,6 +143,7 @@ namespace monogameMinecraft
         }
         public void DrawZombieShadow(EntityBeh entity,Matrix lightSpaceMat,Effect shadowMapShader)
         {
+
             Matrix world = (Matrix.CreateTranslation(entity.position));
             zombieModel.Bones["head"].Transform = Matrix.CreateFromYawPitchRoll(MathHelper.ToRadians(entity.rotationY), -MathHelper.ToRadians(entity.rotationX), 0) * zombieModelRef.Bones["head"].Transform;
             zombieModel.Bones["body"].Transform = Matrix.CreateFromQuaternion(entity.bodyQuat) * zombieModelRef.Bones["body"].Transform;

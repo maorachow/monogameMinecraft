@@ -24,9 +24,9 @@ sampler2D textureSampler = sampler_state
 sampler ShadowMapSampler = sampler_state
 {
     texture = <ShadowMapC>;
-    magfilter = Linear;
-    minfilter = Linear;
-    mipfilter = Linear;
+    magfilter = Point;
+    minfilter = Point;
+    mipfilter = Point;
     AddressU = Wrap;
     AddressV = Wrap;
 };
@@ -88,7 +88,7 @@ float ShadowCalculation(float4 fragPosLightSpace)
     float currentDepth = projCoords.z;
     float shadow;
     float shadowBias = -0.003;
-    float2 texelSize = 1.0 / 2048.0;
+    float2 texelSize = 1.0 / 8192.0;
     for (int x = -1; x <= 1; ++x)
     {
         for (int y = -1; y <= 1; ++y)

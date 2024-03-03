@@ -33,7 +33,7 @@ namespace monogameMinecraft
         public ChunkRenderer chunkRenderer;
         public Thread updateWorldThread;
         public Thread tryRemoveChunksThread;
-        public int renderDistance=128;
+        public int renderDistance=512;
         public GameStatus status;
          public EntityRenderer entityRenderer;
        
@@ -94,7 +94,7 @@ namespace monogameMinecraft
             //  chunkEffect = Content.Load<Effect>("blockeffect");
 
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null);
-            chunkRenderer.SetTexture(terrainTex);
+            chunkRenderer.SetTexture(terrainTex,terrainNormal);
            
             entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer);
@@ -148,12 +148,13 @@ namespace monogameMinecraft
             base.Initialize();
         }
         Texture2D terrainTex;
+        Texture2D terrainNormal;
         protected override void LoadContent()
         {
            
             
             terrainTex = Content.Load<Texture2D>("terrain");
-            
+            terrainNormal = Content.Load<Texture2D>("terrainnormal");
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
            // terrainTex.
     //       Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);

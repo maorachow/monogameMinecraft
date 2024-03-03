@@ -141,7 +141,7 @@ namespace monogameMinecraft
                     {
                         if ( lastChunkIsReadyToRender!=curChunk.isReadyToRender&&(lastChunkIsReadyToRender==false&&curChunk.isReadyToRender==true))
                     {
-                        Debug.WriteLine("update");
+                      //  Debug.WriteLine("update");
                         isNeededUpdateBlock = true;
                   //      GetBlocksAround(entityBounds);
                     }
@@ -281,7 +281,7 @@ namespace monogameMinecraft
             }
             entityBeh.entityHealth -= hurtValue;
             entityBeh.entityHurtCD = 0.2f;
-            entityBeh.entityMotionVec = Vector3.Normalize(entityBeh.position - sourcePos)*5f;
+            entityBeh.entityMotionVec = Vector3.Normalize(entityBeh.position - sourcePos)*15f;
         }
         Vector3 ToEulerAngles(Quaternion q)
         {

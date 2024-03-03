@@ -20,13 +20,16 @@ namespace monogameMinecraft
       //  public AlphaTestEffect basicNSShader;
         public Effect basicShader;
         public Texture2D atlas;
+        public Texture2D atlasNormal;
         //Dictionary<Vector2Int,Chunk> RenderingChunks
-        public Effect shadowmapShader;
+        
         public ShadowRenderer shadowRenderer;
-        public void SetTexture(Texture2D tex)
+        public void SetTexture(Texture2D tex,Texture2D texNormal)
         {
             atlas= tex;
+            atlasNormal= texNormal;
             basicShader.Parameters["Texture"].SetValue(atlas);
+            basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
         }
         public ChunkRenderer(MinecraftGame game, GraphicsDevice device,Effect basicSolidShader,ShadowRenderer shadowRenderer)
         {
@@ -37,7 +40,7 @@ namespace monogameMinecraft
             device.BlendState = BlendState.NonPremultiplied;
             device.DepthStencilState = DepthStencilState.Default;
  
-            this.shadowmapShader= shadowmapShader;
+            
  
             shadowMapTarget = new RenderTarget2D(device, 2048, 2048, false,SurfaceFormat.Rgba64,DepthFormat.Depth24Stencil8);
         }
@@ -46,6 +49,7 @@ namespace monogameMinecraft
         public void RenderAllChunksOpq(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
             basicShader.Parameters["Texture"].SetValue(atlas);
+            basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
             basicShader.Parameters["View"].SetValue(player.cam.viewMatrix);
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);
@@ -93,8 +97,9 @@ namespace monogameMinecraft
             basicShader.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
-        
-        
+            basicShader.Parameters["LightColor"].SetValue(new Vector3(1,1,1));
+            basicShader.Parameters["LightDir"].SetValue(new Vector3(20, 40, 30));
+            basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
             isBusy = true;
             BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
 

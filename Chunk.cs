@@ -560,9 +560,9 @@ public struct RandomGenerator3D
             thisHeightMap = GenerateChunkHeightmap(chunkPos);
         
         //    map = additiveMap;
-            verticesOpq = new List<VertexPositionNormalTexture>();
-            verticesNS = new List<VertexPositionNormalTexture>();
-            verticesWT = new List<VertexPositionNormalTexture>();
+            verticesOpq = new List<VertexPositionNormalTangentTexture>();
+            verticesNS = new List<VertexPositionNormalTangentTexture>();
+            verticesWT = new List<VertexPositionNormalTangentTexture>();
             indicesOpq = new List<ushort>();
             indicesNS = new List<ushort>();
             indicesWT = new List<ushort>();
@@ -1089,11 +1089,11 @@ public struct RandomGenerator3D
         }
 
     public bool isReadyToRender=false;
-    public List<VertexPositionNormalTexture> verticesOpq;//= new List<VertexPositionNormalTexture>();
+    public List<VertexPositionNormalTangentTexture> verticesOpq;//= new List<VertexPositionNormalTexture>();
     public List<ushort> indicesOpq;
-    public List<VertexPositionNormalTexture> verticesNS; //= new List<VertexPositionNormalTexture>();
+    public List<VertexPositionNormalTangentTexture> verticesNS; //= new List<VertexPositionNormalTexture>();
     public List<ushort> indicesNS;
-    public List<VertexPositionNormalTexture> verticesWT;// = new List<VertexPositionNormalTexture>();
+    public List<VertexPositionNormalTangentTexture> verticesWT;// = new List<VertexPositionNormalTexture>();
     public List<ushort> indicesWT;
     public BoundingBox chunkBounds;
     // void BuildMesh();
@@ -1105,7 +1105,7 @@ public struct RandomGenerator3D
 
 
 
-    public void GenerateMesh(List<VertexPositionNormalTexture> OpqVerts, List<VertexPositionNormalTexture> NSVerts,List<VertexPositionNormalTexture> WTVerts,List<ushort> OpqIndices,List<ushort> NSIndices,List<ushort> WTIndices)
+    public void GenerateMesh(List<VertexPositionNormalTangentTexture> OpqVerts, List<VertexPositionNormalTangentTexture> NSVerts,List<VertexPositionNormalTangentTexture> WTVerts,List<ushort> OpqIndices,List<ushort> NSIndices,List<ushort> WTIndices)
     {
 
      
@@ -1351,8 +1351,8 @@ public struct RandomGenerator3D
         isReadyToRender = false;
         //   if (VBOpq == null)
         //   {
-        VBOpq = new  VertexBuffer(this.device, typeof(VertexPositionNormalTexture), verticesOpqArray.Length , BufferUsage.WriteOnly);
-     //   }
+        VBOpq = new  VertexBuffer(this.device, typeof(VertexPositionNormalTangentTexture), verticesOpqArray.Length+1 , BufferUsage.WriteOnly);
+        //   }
       
            VBOpq.SetData(verticesOpqArray);
       //  if(IBOpq == null)
@@ -1362,7 +1362,7 @@ public struct RandomGenerator3D
         
         IBOpq.SetData(indicesOpqArray);
         
-        VBWT = new VertexBuffer(this.device, typeof(VertexPositionNormalTexture), verticesWTArray.Length  , BufferUsage.WriteOnly);
+        VBWT = new VertexBuffer(this.device, typeof(VertexPositionNormalTangentTexture), verticesWTArray.Length + 1, BufferUsage.WriteOnly);
        
         if (verticesWTArray.Length > 0)
         {
@@ -1380,7 +1380,7 @@ public struct RandomGenerator3D
   
 
         
-            VBNS = new VertexBuffer(this.device, typeof(VertexPositionNormalTexture), verticesNSArray.Length  , BufferUsage.WriteOnly);
+            VBNS = new VertexBuffer(this.device, typeof(VertexPositionNormalTangentTexture), verticesNSArray.Length + 1, BufferUsage.WriteOnly);
        
         if (verticesNSArray.Length > 0)
         {
@@ -1397,12 +1397,12 @@ public struct RandomGenerator3D
 
 
     }
-    static void BuildFace(int typeid, Vector3 corner, Vector3 up, Vector3 right, bool reversed, List<VertexPositionNormalTexture> verts, int side,List<ushort> indices)
+    static void BuildFace(int typeid, Vector3 corner, Vector3 up, Vector3 right, bool reversed, List<VertexPositionNormalTangentTexture> verts, int side,List<ushort> indices)
     {
-        VertexPositionNormalTexture vert00=new VertexPositionNormalTexture();
-        VertexPositionNormalTexture vert01 = new VertexPositionNormalTexture();
-        VertexPositionNormalTexture vert11 = new VertexPositionNormalTexture();
-        VertexPositionNormalTexture vert10 = new VertexPositionNormalTexture();
+        VertexPositionNormalTangentTexture vert00 =new VertexPositionNormalTangentTexture();
+        VertexPositionNormalTangentTexture vert01 = new VertexPositionNormalTangentTexture();
+        VertexPositionNormalTangentTexture vert11 = new VertexPositionNormalTangentTexture();
+        VertexPositionNormalTangentTexture vert10 = new VertexPositionNormalTangentTexture();
         short index = (short)verts.Count;
         vert00.Position = corner;
         vert01.Position = corner + up;
@@ -1436,10 +1436,16 @@ public struct RandomGenerator3D
 
 
             Vector3 normal = -Vector3.Cross(up, right);
+            Vector3 tangent = -right;
             vert00.Normal = normal;
             vert01.Normal = normal;
             vert11.Normal = normal;
             vert10.Normal = normal;
+
+            vert00.Tangent = tangent;
+            vert01.Tangent = tangent;
+            vert11.Tangent = tangent;
+            vert10.Tangent = tangent;
             /*  verts.Add(vert00);
                verts.Add(vert01);
                verts.Add(vert11);
@@ -1461,10 +1467,17 @@ public struct RandomGenerator3D
         {
 
             Vector3 normal = Vector3.Cross(up, right);
+            Vector3 tangent = right;
+            
             vert00.Normal = normal;
             vert01.Normal = normal;
             vert11.Normal = normal;
             vert10.Normal = normal;
+
+            vert00.Tangent = tangent;
+            vert01.Tangent = tangent;
+            vert11.Tangent = tangent;
+            vert10.Tangent = tangent;
             /*    verts.Add(vert01);
                 verts.Add(vert00);
                 verts.Add(vert11);
@@ -1599,9 +1612,9 @@ public struct RandomGenerator3D
         return map[x, y, z];
     }
 
-    public VertexPositionNormalTexture[] verticesOpqArray;
-    public VertexPositionNormalTexture[] verticesNSArray;
-    public VertexPositionNormalTexture[] verticesWTArray;
+    public VertexPositionNormalTangentTexture[] verticesOpqArray;
+    public VertexPositionNormalTangentTexture[] verticesNSArray;
+    public VertexPositionNormalTangentTexture[] verticesWTArray;
     public ushort[] indicesOpqArray;
     public ushort[] indicesNSArray;
     public ushort[] indicesWTArray;

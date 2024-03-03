@@ -30,7 +30,7 @@ namespace monogameMinecraft
             this.shadowMapShader = shadowMapShader;
             this.entityRenderer = er;
             this.chunkRenderer = cr;
-            shadowMapTarget = new RenderTarget2D(device, 2048, 2048, false, SurfaceFormat.Rgba64, DepthFormat.Depth24);
+            shadowMapTarget = new RenderTarget2D(device, 8192, 8192, false, SurfaceFormat.Rgba64, DepthFormat.Depth24);
         }
         public void UpdateLightMatrices(GamePlayer player)
         {
@@ -43,13 +43,17 @@ namespace monogameMinecraft
             device.SetRenderTarget(shadowMapTarget);
 
             chunkRenderer.RenderShadow(ChunkManager.chunks, player, lightSpaceMat, shadowMapShader);
-         //   BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);
+            BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);
             foreach (var entity in EntityBeh.worldEntities)
             {
                 switch (entity.typeID)
                 {
                     case 0:
+                        if(frustum.Intersects(entity.entityBounds))
+                        {
                         entityRenderer.DrawZombieShadow(entity, lightSpaceMat, shadowMapShader);
+                        }
+                       
                         break;
                 }
              //       entityRenderer.DrawModelShadow(entityRenderer.zombieModel, Matrix.CreateTranslation(entity.position), lightSpaceMat,shadowMapShader);
