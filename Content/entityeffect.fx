@@ -2,6 +2,7 @@
 matrix View;
 matrix Projection;
 matrix LightSpaceMat;
+matrix LightSpaceMatFar;
 float3 viewPos;
  
  
@@ -31,6 +32,15 @@ sampler ShadowMapSampler = sampler_state
     AddressV = Wrap;
 };
 
+sampler ShadowMapSamplerFar = sampler_state
+{
+    texture = <ShadowMapCFar>;
+    magfilter = Point;
+    minfilter = Point;
+    mipfilter = Point;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
@@ -47,6 +57,7 @@ struct VertexShaderOutput
     float2 TexureCoordinate : TEXCOORD0;
  
     float4 LightSpacePosition : TEXCOORD2;
+    float4 LightSpacePositionFar : TEXCOORD1;
 };
 
 struct PixelShaderOutput
@@ -67,11 +78,12 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
  
   
     output.TexureCoordinate = input.TexureCoordinate;
+    output.LightSpacePositionFar = mul(worldPosition, LightSpaceMatFar);
     output.LightSpacePosition = mul(worldPosition, LightSpaceMat);
     
     return output;
 }
-float ShadowCalculation(float4 fragPosLightSpace)
+float ShadowCalculation(float4 fragPosLightSpace,sampler2D sp)
 {
    
     float3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
@@ -83,17 +95,17 @@ float ShadowCalculation(float4 fragPosLightSpace)
     {
         isOutBounds = true;
     }
-    float closestDepth = tex2D(ShadowMapSampler, projCoords.xy).r;
+    float closestDepth = tex2D(sp, projCoords.xy).r;
    
     float currentDepth = projCoords.z;
     float shadow;
-    float shadowBias = -0.003;
-    float2 texelSize = 1.0 / 8192.0;
+    float shadowBias = -0.002;
+    float2 texelSize = 1.0 / 2048.0;
     for (int x = -1; x <= 1; ++x)
     {
         for (int y = -1; y <= 1; ++y)
         {
-            float pcfDepth = tex2D(ShadowMapSampler, projCoords.xy + float2(x, y) * texelSize).r;
+            float pcfDepth = tex2D(sp, projCoords.xy + float2(x, y) * texelSize).r;
          //   shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
             if (pcfDepth - shadowBias < currentDepth)
             {
@@ -143,9 +155,10 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
  
  
   
-    float shadow = ShadowCalculation(input.LightSpacePosition);
-   
-    output.Color.rgb *= (0.5 + (shadow * 0.5));
+    float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler);
+    
+    float shadowFinal = clamp(shadow, 0, 1);
+    output.Color.rgb *= (0.5 + (shadowFinal * 0.5));
  
  
     return output;

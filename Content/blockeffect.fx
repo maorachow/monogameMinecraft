@@ -2,6 +2,7 @@ matrix World;
 matrix View;
 matrix Projection;
 matrix LightSpaceMat;
+matrix LightSpaceMatFar;
 float3 viewPos;
 float Alpha;
 float fogStart = 256;
@@ -52,7 +53,15 @@ sampler ShadowMapSampler = sampler_state
     AddressU = Wrap;
     AddressV = Wrap;
 };
-
+sampler ShadowMapFarSampler = sampler_state
+{
+    texture = <ShadowMapFar>;
+    magfilter = Point;
+    minfilter = Point;
+    mipfilter = Point;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
@@ -72,6 +81,7 @@ struct VertexShaderOutput
     float3 TangentViewPos : TEXCOORD11;
     float3 FragPos : TEXCOORD1;
     float4 LightSpacePosition : TEXCOORD2;
+    float4 LightSpacePositionFar : TEXCOORD12;
     
 };
 
@@ -102,10 +112,10 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     output.TangentViewPos = mul(output.TBN, viewPos);
     output.TexureCoordinate = input.TexureCoordinate;
     output.LightSpacePosition = mul(worldPosition, LightSpaceMat);
-    
+    output.LightSpacePositionFar = mul(worldPosition, LightSpaceMatFar);
     return output;
 }
-float ShadowCalculation(float4 fragPosLightSpace)
+float ShadowCalculation(float4 fragPosLightSpace,sampler2D sp,float bias)
 {
    
     float3 projCoords = fragPosLightSpace.xyz /fragPosLightSpace.w;
@@ -117,17 +127,17 @@ float ShadowCalculation(float4 fragPosLightSpace)
     {
         isOutBounds = true;
     }
-    float closestDepth = tex2D(ShadowMapSampler, projCoords.xy).r;
+    float closestDepth = tex2D(sp, projCoords.xy).r;
    
     float currentDepth = projCoords.z;
     float shadow;
-    float shadowBias =-0.003;
+    float shadowBias = bias;
     float2 texelSize = 1.0 / 2048.0;
     for (int x = -1; x <= 1; ++x)
     {
         for (int y = -1; y <= 1; ++y)
         {
-            float pcfDepth = tex2D(ShadowMapSampler, projCoords.xy + float2(x, y) * texelSize).r;
+            float pcfDepth = tex2D(sp, projCoords.xy + float2(x, y) * texelSize).r;
          //   shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
             if (pcfDepth - shadowBias > currentDepth)
             {
@@ -178,7 +188,7 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir)
     // depth of current layer
     float currentLayerDepth = 0.0;
     // the amount to shift the texture coordinates per layer (from vector P)
-    float2 P = viewDir.xy * 0.01;
+    float2 P = viewDir.xy * 0.005;
     float2 deltaTexCoords = P / numLayers;
     float2 currentTexCoords = texCoords;
     float currentDepthMapValue = tex2D(depthSampler, currentTexCoords).r;
@@ -243,8 +253,20 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float3 reflectDir = reflect(-specLightDir, normal);
     float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16);
     float3 specular = 0.8 * spec * LightColor;
-    float shadow = ShadowCalculation(input.LightSpacePosition);
-    float3 result = (ambient +(1-shadow)*(diffuse + specular))* objectColor;
+    float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler,-0.003);
+    float shadow1;
+    
+    if (length(viewPos - input.FragPos)>30)
+    {
+        shadow1 = ShadowCalculation(input.LightSpacePositionFar, ShadowMapFarSampler,-0.006); 
+    }
+    else
+    {
+        shadow1 = 0;
+    }
+   
+    float shadowFinal = clamp(  shadow+shadow1, 0, 1);
+    float3 result = (ambient + (1 - shadowFinal) * (diffuse + specular)) * objectColor;
     //
      
 

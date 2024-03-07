@@ -45,9 +45,10 @@ namespace monogameMinecraft
             basicShader.Parameters["TextureE"].SetValue(zombieTex);
             basicShader.Parameters["ShadowMapC"].SetValue(shadowRenderer.shadowMapTarget);
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-
+  //          basicShader.Parameters["LightSpaceMatFar"].SetValue(shadowRenderer.lightSpaceMatFar);
+    //        basicShader.Parameters["ShadowMapCFar"].SetValue(shadowRenderer.shadowMapTargetFar);
             //      zombieModel.Bones["head"].Transform = Matrix.CreateScale(0.5f);
-           
+
             BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);  
             foreach (var entity in EntityBeh.worldEntities)
             {
@@ -136,6 +137,7 @@ namespace monogameMinecraft
                     effect.Parameters["World"].SetValue(sharedDrawBoneMatrices[mesh.ParentBone.Index] * world);
 
                     effect.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
+                  
                 }
 
                 mesh.Draw();
@@ -149,7 +151,7 @@ namespace monogameMinecraft
             zombieModel.Bones["body"].Transform = Matrix.CreateFromQuaternion(entity.bodyQuat) * zombieModelRef.Bones["body"].Transform;
             zombieModel.Bones["rightLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["rightLeg"].Transform;
             zombieModel.Bones["leftLeg"].Transform = Matrix.CreateFromYawPitchRoll(0, -MathHelper.ToRadians(MathHelper.Clamp(MathF.Cos(entity.entityLifetime * 6f) * entity.curSpeed * 15f, -55f, 55f)), 0) * zombieModelRef.Bones["leftLeg"].Transform;
-            DrawModelShadow(zombieModel, world, lightSpaceMat, shadowMapShader);
+            DrawModelShadow(zombieModel, world, lightSpaceMat,shadowMapShader);
         }
         public void DrawZombie(EntityBeh entity)
         {

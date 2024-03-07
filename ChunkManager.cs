@@ -299,28 +299,45 @@ namespace monogameMinecraft
             if (chunkNeededUpdate == null||chunkNeededUpdate.isReadyToRender==false)
             {
                 return;
-            }
+            } 
             Vector3Int chunkSpacePos = intPos - new Vector3Int(chunkNeededUpdate.chunkPos.x, 0, chunkNeededUpdate.chunkPos.y);
-
+            if (chunkSpacePos.y < 0 || chunkSpacePos.y >= Chunk.chunkHeight)
+            {
+                return;
+            }
                 chunkNeededUpdate.map[chunkSpacePos.x, chunkSpacePos.y, chunkSpacePos.z] = blockID;
                 chunkNeededUpdate.BuildChunk();
                 chunkNeededUpdate.isModifiedInGame = true;
-                if (chunkNeededUpdate.rightChunk != null && chunkNeededUpdate.rightChunk.isMapGenCompleted == true)
-                    
-                chunkNeededUpdate.rightChunk.BuildChunk();
-
+                if (chunkSpacePos.x == 0)
+                {
                 if (chunkNeededUpdate.leftChunk != null && chunkNeededUpdate.leftChunk.isMapGenCompleted == true)
                 {
                     chunkNeededUpdate.leftChunk.BuildChunk();
                 }
-                if (chunkNeededUpdate.frontChunk != null && chunkNeededUpdate.frontChunk.isMapGenCompleted == true)
-                {
-                    chunkNeededUpdate.frontChunk.BuildChunk();
                 }
-                if (chunkNeededUpdate.backChunk != null && chunkNeededUpdate.backChunk.isMapGenCompleted == true)
+                if (chunkSpacePos.x == Chunk.chunkWidth - 1)
+                {
+                if (chunkNeededUpdate.rightChunk != null && chunkNeededUpdate.rightChunk.isMapGenCompleted == true)
+                    
+                chunkNeededUpdate.rightChunk.BuildChunk();
+
+                }
+            if (chunkSpacePos.z == 0)
+            {
+            if (chunkNeededUpdate.backChunk != null && chunkNeededUpdate.backChunk.isMapGenCompleted == true)
                 {
                     chunkNeededUpdate.backChunk.BuildChunk();
                 }
+            }
+            if (chunkSpacePos.z == Chunk.chunkWidth - 1)
+            {
+            if (chunkNeededUpdate.frontChunk != null && chunkNeededUpdate.frontChunk.isMapGenCompleted == true)
+                {
+                    chunkNeededUpdate.frontChunk.BuildChunk();
+                }
+            }
+                
+              
                 //   BlockModifyData b = new BlockModifyData(pos.X, pos.Y, pos.Z, blockID);
                 //    Program.AppendMessage(null, new MessageProtocol(133, MessagePackSerializer.Serialize(b)));
             }

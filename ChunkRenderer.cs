@@ -112,7 +112,7 @@ namespace monogameMinecraft
             BoundingFrustum frustum=new BoundingFrustum(player.cam.viewMatrix*player.cam.projectionMatrix);
             
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-        //    EntityRenderer.basicShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
+            basicShader.Parameters["LightSpaceMatFar"].SetValue(shadowRenderer.lightSpaceMatFar);
             basicShader.Parameters["ShadowMap"].SetValue(shadowRenderer.shadowMapTarget);
             foreach (var chunk in RenderingChunks)
             {
@@ -154,9 +154,9 @@ namespace monogameMinecraft
             BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
 
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-      
+            basicShader.Parameters["LightSpaceMatFar"].SetValue(shadowRenderer.lightSpaceMatFar);
             basicShader.Parameters["ShadowMap"].SetValue(shadowRenderer.shadowMapTarget);
- 
+            basicShader.Parameters["ShadowMapFar"].SetValue(shadowRenderer.shadowMapTargetFar);
             foreach (var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;
@@ -197,23 +197,23 @@ namespace monogameMinecraft
         {
 
             shadowmapShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
-            BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
+         
+         
             foreach (var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;
                 if (c == null)
                 {
                     continue;
-                }
+                }              
                 if((MathF.Abs(c.chunkPos.x - player.playerPos.X) < ( 128) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (128)))
                 {
-                    if (frustum.Intersects(c.chunkBounds))
-                    {
+                    
                  if (c.isReadyToRender == true && c.disposed == false)
                 {
                         RenderSingleChunkShadow(c,shadowmapShader);
                 }
-                    }
+                  
                
                 }
               

@@ -319,7 +319,7 @@ namespace monogameMinecraft
                    _spriteBatch.End();
                      _spriteBatch.Begin();
                     _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
-                 
+                    _spriteBatch.Draw(shadowRenderer.shadowMapTargetFar, new Rectangle(200, 200, 200, 200), Color.White);
                     _spriteBatch.End();
                     break;
                 case GameStatus.Menu:
