@@ -1467,7 +1467,7 @@ public struct RandomGenerator3D
         {
 
             Vector3 normal = Vector3.Cross(up, right);
-            Vector3 tangent = right;
+            Vector3 tangent = -right;
             
             vert00.Normal = normal;
             vert01.Normal = normal;

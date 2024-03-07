@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using monogameMinecraft;
 using System.Threading;
 using System.Collections.Generic;
+using System.Net.Security;
 //using System.Numerics;
 
 namespace monogameMinecraft
@@ -28,6 +29,8 @@ namespace monogameMinecraft
         public Effect chunkSolidEffect;
         public Effect chunkShadowEffect;
         public Effect entityEffect;
+        public Effect ssaoEffect;
+        public Effect gBufferEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
@@ -38,6 +41,7 @@ namespace monogameMinecraft
          public EntityRenderer entityRenderer;
        
         public ShadowRenderer shadowRenderer;
+    //    public SSAORenderer ssaoRenderer;
         public MinecraftGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -46,12 +50,17 @@ namespace monogameMinecraft
             Window.AllowUserResizing = true;
 
             Window.ClientSizeChanged += OnResize;
-            
+            _graphics.PreparingDeviceSettings += PrepareGraphicsDevice;
+           
                this.IsFixedTimeStep = false;
         //         TargetElapsedTime = System.TimeSpan.FromMilliseconds(33);
             //this.OnExiting += OnExit;
         }
-    
+        public void PrepareGraphicsDevice(object sender, PreparingDeviceSettingsEventArgs e)
+        {
+            _graphics.PreferMultiSampling = true;
+          
+        }
         void OnResize(Object sender, EventArgs e)
         {
             UIElement.ScreenRect = this.Window.ClientBounds;
@@ -63,6 +72,7 @@ namespace monogameMinecraft
             {
                 case GameStatus.Started:
                     float aspectRatio = GraphicsDevice.Viewport.Width / (float)GraphicsDevice.Viewport.Height;
+                    gamePlayer.cam.aspectRatio= aspectRatio;
                     gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), aspectRatio, 0.1f, 1000f);
                     break;
             }
@@ -74,6 +84,7 @@ namespace monogameMinecraft
         }
         public void InitGameplay()
         {
+            GraphicsDevice.PresentationParameters.MultiSampleCount =2;
             IsMouseVisible = false;
             ChunkManager.chunks = new System.Collections.Concurrent.ConcurrentDictionary<Vector2Int, Chunk>();
             ChunkManager.chunkDataReadFromDisk = new Dictionary<Vector2Int, ChunkData>();
@@ -92,14 +103,18 @@ namespace monogameMinecraft
             chunkShadowEffect = Content.Load<Effect>("createshadowmapeffect");
             entityEffect = Content.Load<Effect>("entityeffect");
             //  chunkEffect = Content.Load<Effect>("blockeffect");
-
+            gBufferEffect = Content.Load<Effect>("gbuffereffect");
+            ssaoEffect = Content.Load<Effect>("ssaoeffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null);
-            chunkRenderer.SetTexture(terrainTex,terrainNormal);
-           
+            chunkRenderer.SetTexture(terrainTex,terrainNormal, terrainDepth);
+       //     ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferEffect, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
+          
             entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer);
             chunkRenderer.shadowRenderer = shadowRenderer;
+            
             entityRenderer.shadowRenderer = shadowRenderer;
+            shadowRenderer.zombieModel = Content.Load<Model>("zombiemodelref");
             GamePlayer.ReadPlayerData(gamePlayer,this);
             EntityBeh.InitEntityList();
 
@@ -149,6 +164,7 @@ namespace monogameMinecraft
         }
         Texture2D terrainTex;
         Texture2D terrainNormal;
+        Texture2D terrainDepth;
         protected override void LoadContent()
         {
            
@@ -156,11 +172,12 @@ namespace monogameMinecraft
             terrainTex = Content.Load<Texture2D>("terrain");
             terrainNormal = Content.Load<Texture2D>("terrainnormal");
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
+            terrainDepth = Content.Load<Texture2D>("terrainheight");
            // terrainTex.
-    //       Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
-         //   button = new UIButton(new Vector2(0.1f, 0.1f), 0.3f, 0.2f, terrainTex, new Vector2(0.15f, 0.15f), sf, _spriteBatch,this.Window);
+           //       Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
+           //   button = new UIButton(new Vector2(0.1f, 0.1f), 0.3f, 0.2f, terrainTex, new Vector2(0.15f, 0.15f), sf, _spriteBatch,this.Window);
            // chunkRenderer.atlas = terrainTex;
-           
+
             // TODO: use this.Content to load your game content here
         }
         int lastMouseX;
@@ -203,7 +220,7 @@ namespace monogameMinecraft
                 //    _spriteBatch.End();
                     // TODO: Add your update logic here
                     EntityManager.UpdateAllEntity((float)gameTime.ElapsedGameTime.TotalSeconds);
-                    EntityManager.TrySpawnNewZombie(this);
+                    EntityManager.TrySpawnNewZombie(this, (float)gameTime.ElapsedGameTime.TotalSeconds);
                 
                    
                     break;
@@ -265,13 +282,15 @@ namespace monogameMinecraft
 
         }
         public void RenderWorld()
-        {
-            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+        {  
             shadowRenderer.UpdateLightMatrices(gamePlayer);
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
+         
             shadowRenderer.RenderShadow(gamePlayer);  
-           
-            chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
+         //   ssaoRenderer.Draw();
             
+            chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
+          
             entityRenderer.Draw();
            
             chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
@@ -297,9 +316,10 @@ namespace monogameMinecraft
                     {
                         el.DrawString(el.text);
                     }
-                    _spriteBatch.End();
-                    _spriteBatch.Begin();
+                   _spriteBatch.End();
+                     _spriteBatch.Begin();
                     _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
+                 
                     _spriteBatch.End();
                     break;
                 case GameStatus.Menu:

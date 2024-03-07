@@ -21,15 +21,18 @@ namespace monogameMinecraft
         public Effect basicShader;
         public Texture2D atlas;
         public Texture2D atlasNormal;
+        public Texture2D atlasDepth;
         //Dictionary<Vector2Int,Chunk> RenderingChunks
         
         public ShadowRenderer shadowRenderer;
-        public void SetTexture(Texture2D tex,Texture2D texNormal)
+        public void SetTexture(Texture2D tex,Texture2D texNormal,Texture2D textureDepth)
         {
             atlas= tex;
             atlasNormal= texNormal;
+            this.atlasDepth= textureDepth;
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
+            basicShader.Parameters["TextureDepth"].SetValue(atlasDepth);
         }
         public ChunkRenderer(MinecraftGame game, GraphicsDevice device,Effect basicSolidShader,ShadowRenderer shadowRenderer)
         {
@@ -42,21 +45,68 @@ namespace monogameMinecraft
  
             
  
-            shadowMapTarget = new RenderTarget2D(device, 2048, 2048, false,SurfaceFormat.Rgba64,DepthFormat.Depth24Stencil8);
+        
         }
-        public RenderTarget2D shadowMapTarget;
  
+        public void RenderAllChunksGBuffer(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player,Effect gBufferEffect)
+        {
+            gBufferEffect.Parameters["View"].SetValue(player.cam.viewMatrix);
+            gBufferEffect.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
+            BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
+            foreach (var chunk in RenderingChunks)
+            {
+                Chunk c = chunk.Value;
+                if (c == null)
+                {
+                    continue;
+                }
+
+                if (c.isReadyToRender == true && c.disposed == false)
+                {
+                    if(MathF.Abs(c.chunkPos.x - player.playerPos.X) < (128) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (128))
+                    {
+                    if (frustum.Intersects(c.chunkBounds))
+                    {
+                        RenderSingleChunkGBuffer(c, player,gBufferEffect);
+
+                    }
+                    }
+                   
+
+
+                }
+            }
+        }
+        public void RenderSingleChunkGBuffer(Chunk c,GamePlayer player,Effect gBufferEffect)
+        {
+            Matrix world = (Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
+            gBufferEffect.Parameters["World"].SetValue(world);
+            device.SetVertexBuffer(c.VBOpq);
+
+            device.Indices = c.IBOpq;
+
+            foreach (EffectPass pass in gBufferEffect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesOpqArray.Length / 3);
+
+            }
+        }
         public void RenderAllChunksOpq(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
+            basicShader.Parameters["TextureDepth"].SetValue(atlasDepth);
             basicShader.Parameters["View"].SetValue(player.cam.viewMatrix);
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
-            
-           // shadowmapShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-       //     RenderShadow(RenderingChunks, player,lightSpaceMat);
+            basicShader.Parameters["LightColor"].SetValue(new Vector3(1, 1, 1));
+            basicShader.Parameters["LightDir"].SetValue(new Vector3(20, 40, 30));
+            basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
+            basicShader.Parameters["viewPos"].SetValue(player.cam.position);
+            // shadowmapShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
+            //     RenderShadow(RenderingChunks, player,lightSpaceMat);
 
             isBusy = true; 
             BoundingFrustum frustum=new BoundingFrustum(player.cam.viewMatrix*player.cam.projectionMatrix);
@@ -147,7 +197,7 @@ namespace monogameMinecraft
         {
 
             shadowmapShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
-       
+            BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
             foreach (var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;
@@ -157,11 +207,14 @@ namespace monogameMinecraft
                 }
                 if((MathF.Abs(c.chunkPos.x - player.playerPos.X) < ( 128) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (128)))
                 {
-                
-                if (c.isReadyToRender == true && c.disposed == false)
+                    if (frustum.Intersects(c.chunkBounds))
+                    {
+                 if (c.isReadyToRender == true && c.disposed == false)
                 {
                         RenderSingleChunkShadow(c,shadowmapShader);
                 }
+                    }
+               
                 }
               
             }
@@ -201,7 +254,7 @@ namespace monogameMinecraft
                 device.Indices = c.IBWT;
                 device.SetVertexBuffer(c.VBWT);
                 basicShader.Parameters["Alpha"].SetValue(0.7f);
-                basicShader.Parameters["viewPos"].SetValue(player.playerPos);
+                basicShader.Parameters["viewPos"].SetValue(player.cam.position);
                 foreach (EffectPass pass in basicShader.CurrentTechnique.Passes)
                 {
                     pass.Apply();
@@ -214,7 +267,7 @@ namespace monogameMinecraft
          
             basicShader.Parameters["World"].SetValue(Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
          
-            basicShader.Parameters["viewPos"].SetValue(player.playerPos);
+            basicShader.Parameters["viewPos"].SetValue(player.cam.position);
             basicShader.Parameters["Alpha"].SetValue(1.0f);
             if (c.verticesNSArray.Length > 0)
             {
@@ -243,7 +296,7 @@ namespace monogameMinecraft
 
                 basicShader.Parameters["Alpha"].SetValue(1.0f);
             
-                basicShader.Parameters["viewPos"].SetValue(game.gamePlayer.playerPos);
+                basicShader.Parameters["viewPos"].SetValue(game.gamePlayer.cam.position);
             //    basicShader.Parameters["fogDensity"].SetValue(0.01f);
             // buffer.SetData(c.verticesOpqArray);
             device.SetVertexBuffer(c.VBOpq);

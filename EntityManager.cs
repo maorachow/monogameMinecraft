@@ -19,9 +19,9 @@ namespace monogameMinecraft
                 EntityBeh.worldEntities[i].OnUpdate(deltaTime);
             }
         }
-        public static void TrySpawnNewZombie(MinecraftGame game)
+        public static void TrySpawnNewZombie(MinecraftGame game,float deltaTime)
         {
-            if (randomGenerator.NextSingle() >= 0.998 && EntityBeh.worldEntities.Count < 70)
+            if (randomGenerator.NextSingle() >= 1-deltaTime && EntityBeh.worldEntities.Count < 70)
             {
                 Vector2 randSpawnPos = new Vector2(game.gamePlayer.playerPos.X+(randomGenerator.NextSingle() - 0.5f) * 80f, game.gamePlayer.playerPos.Z + (randomGenerator.NextSingle() - 0.5f) * 80f);
                 Vector3 spawnPos = new Vector3(randSpawnPos.X, ChunkManager.GetChunkLandingPoint(randSpawnPos.X, randSpawnPos.Y), randSpawnPos.Y);

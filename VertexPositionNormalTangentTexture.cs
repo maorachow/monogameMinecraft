@@ -36,8 +36,8 @@ namespace monogameMinecraft
         {
             VertexElement[] elements = new VertexElement[] { 
                 new VertexElement(0, VertexElementFormat.Vector3, VertexElementUsage.Position, 0), 
-                new VertexElement(sizeof(float)*3, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate,1),
-                new VertexElement(sizeof(float)*6, VertexElementFormat.Vector3, VertexElementUsage.TextureCoordinate,2),
+                new VertexElement(sizeof(float)*3, VertexElementFormat.Vector3, VertexElementUsage.Normal,0),
+                new VertexElement(sizeof(float)*6, VertexElementFormat.Vector3, VertexElementUsage.Tangent,0),
                 new VertexElement(sizeof(float)*9, VertexElementFormat.Vector2, VertexElementUsage.TextureCoordinate, 0) };
             VertexDeclaration declaration = new VertexDeclaration(elements);
             VertexDeclaration = declaration;

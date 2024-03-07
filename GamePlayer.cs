@@ -70,8 +70,9 @@ namespace monogameMinecraft
                
                 player.GetBlocksAround(player.playerBounds);
             }
-        player.inventoryData[0] = 1;
-        //    isJsonReadFromDisk = true;
+            player.inventoryData[0] = 1;
+            player.inventoryData[1] =7;
+            //    isJsonReadFromDisk = true;
         }
         void SetBoundPosition(Vector3 pos)
         {
@@ -205,7 +206,7 @@ namespace monogameMinecraft
             ChunkManager.SetBlockWithUpdate(setBlockPoint, inventoryData[currentSelectedHotbar]);
             GetBlocksAround(playerBounds);
         }
-        public void Move(Vector3 moveVec)
+        public void Move(Vector3 moveVec,bool isClipable)
           {
             //  this.ySize *= 0.4;
             float dx = moveVec.X;
@@ -214,6 +215,16 @@ namespace monogameMinecraft
                 float movX = dx;
                 float movY = dy;
                 float movZ = dz;
+            if(isClipable)
+            {
+                playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds, 0, dy, 0);
+                playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds, dx, 0, 0);
+                playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds, 0, 0, dz);
+                playerPos = GetBoundingBoxCenter(playerBounds);
+                cam.position = playerPos + new Vector3(0f, 0.6f, 0f);
+
+                return;
+            }
                 if (blocksAround.Count == 0)
                 {
                     playerBounds = BlockCollidingBoundingBoxHelper.offset(playerBounds,0, dy, 0);
@@ -361,18 +372,18 @@ namespace monogameMinecraft
            
             
             if (finalMoveVec.X != 0.0f)
-                Move(new Vector3(((cam.horizontalRight * finalMoveVec.X).X),0f, (cam.horizontalRight * finalMoveVec.X).Z));
+                Move(new Vector3(((cam.horizontalRight * finalMoveVec.X).X),0f, (cam.horizontalRight * finalMoveVec.X).Z),false);
 
 
             if (finalMoveVec.Z != 0.0f)
-                Move(new Vector3((cam.horizontalFront * finalMoveVec.Z).X,0f, (cam.horizontalFront * finalMoveVec.Z).Z));
+                Move(new Vector3((cam.horizontalFront * finalMoveVec.Z).X,0f, (cam.horizontalFront * finalMoveVec.Z).Z), false);
             if (isPlayerFlying == true)
             {
-            Move(new Vector3(0f, finalMoveVec.Y, 0f));
+            Move(new Vector3(0f, finalMoveVec.Y, 0f), false);
             }
             else
             {   
-                Move(new Vector3(0f, curGravity*deltaTime, 0f));
+                Move(new Vector3(0f, curGravity*deltaTime, 0f), false);
             }
             if (breakBlockCD <= 0f && mState.LeftButton == ButtonState.Pressed)
             {
@@ -407,16 +418,19 @@ namespace monogameMinecraft
             this.position = position;
             this.front = front;
             this.right = right;
-            //   this.worldUp = up;
-            projectionMatrix= Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), game.GraphicsDevice.DisplayMode.AspectRatio, 0.1f, 1000f);
-        }
 
+            aspectRatio = game.GraphicsDevice.DisplayMode.AspectRatio; 
+            //   this.worldUp = up;
+            projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), game.GraphicsDevice.DisplayMode.AspectRatio, 0.1f, 1000f);
+        }
+        
         public Vector3 position;
         public Vector3 front;
         public Vector3 right;
         public Vector3 up;
         public Vector3 horizontalFront;
         public Vector3 horizontalRight;
+        public float aspectRatio;
         public static Vector3 worldUp=new Vector3(0f,1f,0f);
         public Matrix viewMatrix { get {return Matrix.CreateLookAt(position, position + front, up); } set {value= Matrix.CreateLookAt(position, position + front, up); } }
         //public Matrix viewMatrix;
