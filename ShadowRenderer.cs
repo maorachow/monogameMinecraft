@@ -76,7 +76,7 @@ namespace monogameMinecraft
     Matrix GetLightSpaceMatrix(  float nearPlane,   float farPlane,GamePlayer player,Vector3 lightDir)
     {
             Matrix proj = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90f),player.cam.aspectRatio, nearPlane, farPlane); ;
-       var corners = GetFrustumCornersWorldSpace(proj, player.cam.viewMatrix);
+       var corners = GetFrustumCornersWorldSpace(proj, player.cam.viewMatrixHorizontal);
 
         Vector3 center =new Vector3(0, 0, 0);
         foreach (var v in corners)
@@ -125,8 +125,8 @@ namespace monogameMinecraft
                    }*/
             //   Debug.WriteLine(MathF.Abs(minX - maxX));
             //  Debug.WriteLine(MathF.Abs(minY - maxY));
-            //  Debug.WriteLine(minZ +" "+ maxZ);
-            Matrix lightProjection1 = Matrix.CreateOrthographic(MathF.Abs(minX - maxX), MathF.Abs(minY - maxY), 0.1f, 200f);
+        
+            Matrix lightProjection1 = Matrix.CreateOrthographic(MathF.Abs(minX - maxX), MathF.Abs(minY - maxY), 0.1f,250f);
             return lightView1 * lightProjection1;
         }
         public bool isRenderingFarShadow = true;
@@ -134,11 +134,14 @@ namespace monogameMinecraft
         {
             //   UpdateLightMatrices(player);
             UpdateLightMatrices(player);
+            BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);
+            if (GameOptions.renderShadow)
+            {
             device.SetRenderTarget(shadowMapTarget);
             UpdateLightMatrices(player);
         //    Debug.WriteLine(lightSpaceMat.ToString());
             chunkRenderer.RenderShadow(ChunkManager.chunks, player, lightSpaceMat, shadowMapShader);
-            BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);
+           
 
             foreach (var entity in EntityBeh.worldEntities)
             {
@@ -156,9 +159,11 @@ namespace monogameMinecraft
                 
                     
             }
-            if (isRenderingFarShadow)
+            }
+            
+            if (GameOptions.renderFarShadow)
             {
- device.SetRenderTarget(shadowMapTargetFar);
+         device.SetRenderTarget(shadowMapTargetFar);
             UpdateLightMatrices(player);
             //    Debug.WriteLine(lightSpaceMat.ToString());
             chunkRenderer.RenderShadow(ChunkManager.chunks, player, lightSpaceMatFar, shadowMapShader);

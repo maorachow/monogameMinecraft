@@ -124,7 +124,7 @@ namespace monogameMinecraft
                 return false;
             }
         }
-        public static void UpdateWorldThread(int renderDistance, GamePlayer player,MinecraftGame game)
+        public static void UpdateWorldThread( GamePlayer player,MinecraftGame game)
         {
             BoundingFrustum frustum;
             while (true)
@@ -140,9 +140,9 @@ namespace monogameMinecraft
                 //    Debug.WriteLine("update");
                
                  frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
-                for(float x = player.playerPos.X - renderDistance; x < player.playerPos.X + renderDistance; x += Chunk.chunkWidth)
+                for(float x = player.playerPos.X - GameOptions.renderDistance; x < player.playerPos.X + GameOptions.renderDistance; x += Chunk.chunkWidth)
                 {
-                    for (float z = player.playerPos.Z - renderDistance; z < player.playerPos.Z + renderDistance; z += Chunk.chunkWidth)
+                    for (float z = player.playerPos.Z - GameOptions.renderDistance; z < player.playerPos.Z + GameOptions.renderDistance; z += Chunk.chunkWidth)
                     {
                         Vector2Int chunkPos = Vec3ToChunkPos(new Vector3(x, 0, z));
                         if (GetChunk(chunkPos) == null) {
@@ -165,7 +165,7 @@ namespace monogameMinecraft
                 }
             }
         }
-        public static void TryDeleteChunksThread(int renderDistance, GamePlayer player,MinecraftGame game)
+        public static void TryDeleteChunksThread( GamePlayer player,MinecraftGame game)
         {
             while (true) {
 
@@ -183,7 +183,7 @@ namespace monogameMinecraft
                 {
                     lock (c.Value.taskLock)
                     {
-                    if ((MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (renderDistance + Chunk.chunkWidth))
+                    if ((MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (GameOptions.renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (GameOptions.renderDistance + Chunk.chunkWidth))
                         &&(c.Value.isReadyToRender==true&&c.Value.isTaskCompleted==true)
                         && (c.Value.leftChunk==null||(c.Value.leftChunk!=null&&c.Value.leftChunk.isTaskCompleted == true))
                         && (c.Value.rightChunk == null || (c.Value.rightChunk != null && c.Value.rightChunk.isTaskCompleted == true))

@@ -433,6 +433,7 @@ namespace monogameMinecraft
         public float aspectRatio;
         public static Vector3 worldUp=new Vector3(0f,1f,0f);
         public Matrix viewMatrix { get {return Matrix.CreateLookAt(position, position + front, up); } set {value= Matrix.CreateLookAt(position, position + front, up); } }
+        public Matrix viewMatrixHorizontal { get { return Matrix.CreateLookAt(position, position + horizontalFront, worldUp); } set { value = Matrix.CreateLookAt(position, position + horizontalFront, worldUp); } }
         //public Matrix viewMatrix;
         public Matrix projectionMatrix;
         public float Yaw;
@@ -483,6 +484,7 @@ namespace monogameMinecraft
             right= tmpright;
             up= tmpup;
             viewMatrix = Matrix.CreateLookAt(position, position + front, up);
+            viewMatrixHorizontal = Matrix.CreateLookAt(position, position + horizontalFront, worldUp);
         }
    /*     public Matrix GetViewMatrix()
         {

@@ -197,7 +197,7 @@ namespace monogameMinecraft
         {
 
             shadowmapShader.Parameters["LightSpaceMat"].SetValue(lightSpaceMat);
-         
+            BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
          
             foreach (var chunk in RenderingChunks)
             {
@@ -206,13 +206,16 @@ namespace monogameMinecraft
                 {
                     continue;
                 }              
-                if((MathF.Abs(c.chunkPos.x - player.playerPos.X) < ( 128) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (128)))
+                if((MathF.Abs(c.chunkPos.x - player.playerPos.X) < ( 256) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (256)))
                 {
-                    
-                 if (c.isReadyToRender == true && c.disposed == false)
+                    if(frustum.Intersects(c.chunkBounds))
+                    {
+                    if (c.isReadyToRender == true && c.disposed == false)
                 {
                         RenderSingleChunkShadow(c,shadowmapShader);
                 }
+                    }
+                 
                   
                
                 }

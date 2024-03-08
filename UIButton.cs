@@ -24,7 +24,7 @@ namespace monogameMinecraft
     public class UIButton:UIElement
     {
         public Rectangle ButtonRect;
-        public Action ButtonAction;
+        public Action<UIButton> ButtonAction;
         public Vector2Int textPixelPos;
         public Vector2 textPos;
         public Vector2 textWH;
@@ -39,7 +39,7 @@ namespace monogameMinecraft
         public SpriteFont font;
         public GameWindow window;
         public string text { get;set; }
-        public UIButton(Vector2 position, float width, float height, Texture2D tex, Vector2 tPos ,SpriteFont font,SpriteBatch sb,GameWindow window,Action action,string text) {
+        public UIButton(Vector2 position, float width, float height, Texture2D tex, Vector2 tPos ,SpriteFont font,SpriteBatch sb,GameWindow window,Action<UIButton> action,string text) {
             element00Pos = position;
             element10Pos = new Vector2(position.X+width,position.Y);
             element11Pos = new Vector2(position.X + width, position.Y+height);
@@ -108,7 +108,7 @@ namespace monogameMinecraft
             if (isHovered && mouseState.LeftButton==ButtonState.Pressed && lastMouseState.LeftButton == ButtonState.Released)
             {
                 //Debug.WriteLine("pressed");
-                ButtonAction();
+                ButtonAction(this);
             }
 
                 lastMouseState = mouseState;

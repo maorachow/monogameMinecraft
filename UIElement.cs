@@ -21,6 +21,7 @@ namespace monogameMinecraft
         public void OnResize();
         public string text {get;set;}
         public static List<UIElement> menuUIs = new List<UIElement>();
+        public static List<UIElement> settingsUIs = new List<UIElement>();
         public static List<UIElement> inGameUIs = new List<UIElement>();
     }
 }

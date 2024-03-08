@@ -19,6 +19,7 @@ namespace monogameMinecraft
     public enum GameStatus
     {
         Menu,
+        Settings,
         Started,
         Quiting
     }
@@ -37,7 +38,7 @@ namespace monogameMinecraft
         public Thread updateWorldThread;
         public Thread tryRemoveChunksThread;
         public int renderDistance=512;
-        public GameStatus status;
+        public GameStatus status=GameStatus.Menu;
          public EntityRenderer entityRenderer;
        
         public ShadowRenderer shadowRenderer;
@@ -51,11 +52,12 @@ namespace monogameMinecraft
 
             Window.ClientSizeChanged += OnResize;
             _graphics.PreparingDeviceSettings += PrepareGraphicsDevice;
-           
-               this.IsFixedTimeStep = false;
+            IsMouseVisible = true;
+            this.IsFixedTimeStep = false;
         //         TargetElapsedTime = System.TimeSpan.FromMilliseconds(33);
             //this.OnExiting += OnExit;
         }
+        
         public void PrepareGraphicsDevice(object sender, PreparingDeviceSettingsEventArgs e)
         {
             _graphics.PreferMultiSampling = true;
@@ -67,6 +69,10 @@ namespace monogameMinecraft
             foreach (UIElement element in UIElement.menuUIs )
             {
                 element.OnResize();
+            }
+            foreach(UIElement element1 in UIElement.settingsUIs)
+            {
+                element1.OnResize();
             }
             switch (status)
             {
@@ -82,7 +88,7 @@ namespace monogameMinecraft
             
             Debug.WriteLine(GraphicsDevice.Viewport.Width + " " + GraphicsDevice.Viewport.Height);
         }
-        public void InitGameplay()
+        public void InitGameplay(object obj)
         {
             GraphicsDevice.PresentationParameters.MultiSampleCount =2;
             IsMouseVisible = false;
@@ -90,13 +96,14 @@ namespace monogameMinecraft
             ChunkManager.chunkDataReadFromDisk = new Dictionary<Vector2Int, ChunkData>();
             Chunk.biomeNoiseGenerator.SetFrequency(0.002f);
             ChunkManager.ReadJson();
+            GameOptions.ReadOptionsJson();
             status = GameStatus.Started;
             gamePlayer = new GamePlayer(new Vector3(-0.3f, 100, -0.3f), new Vector3(0.3f, 101.8f, 0.3f), this);
           
-            updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread(renderDistance, gamePlayer,this));
+            updateWorldThread = new Thread(() => ChunkManager.UpdateWorldThread( gamePlayer,this));
             updateWorldThread.IsBackground = true;
             updateWorldThread.Start();
-            tryRemoveChunksThread = new Thread(() => ChunkManager.TryDeleteChunksThread(renderDistance, gamePlayer, this));
+            tryRemoveChunksThread = new Thread(() => ChunkManager.TryDeleteChunksThread( gamePlayer, this));
             tryRemoveChunksThread.IsBackground = true;
             tryRemoveChunksThread.Start();
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
@@ -129,6 +136,7 @@ namespace monogameMinecraft
         void QuitGameplay()
         {
             IsMouseVisible = true;
+            GameOptions.SaveOptions(null);
             ChunkManager.SaveWorldData();
             GamePlayer.SavePlayerData(gamePlayer);
        /*     foreach(var c in ChunkManager.chunks)
@@ -148,7 +156,19 @@ namespace monogameMinecraft
            // updateWorldThread.Abort();
          //   tryRemoveChunksThread.Abort();
         }
-        SpriteFont sf;
+
+        public void GoToSettings(object obj)
+        {
+            this.status = GameStatus.Settings;
+        }
+
+      public void GoToMenuFromSettings(object obj)
+       {
+            GameOptions.SaveOptions(null);
+           this.status = GameStatus.Menu;
+                  
+         }
+            SpriteFont sf;
         protected override void Initialize()
         {
             
@@ -157,6 +177,7 @@ namespace monogameMinecraft
           //  InitGameplay();
         //    sf = Content.Load<SpriteFont>("defaultfont");
             UIUtility.InitGameUI(this);
+            GameOptions.ReadOptionsJson();
             // Chunk c = new Chunk(new Vector2Int(0,0));
             //  chunkSolidEffect = new Effect();
 
@@ -185,11 +206,20 @@ namespace monogameMinecraft
         protected override void Update(GameTime gameTime)
         {
             if(!IsActive) return;
-          //  Draw1(gameTime);
+            //  Draw1(gameTime);
+          
             switch (status)
             {
                 case GameStatus.Menu:
                     foreach(var el in UIElement.menuUIs)
+                    {
+                        el.Update();
+                    }
+                    break;
+
+
+                case GameStatus.Settings:
+                    foreach (var el in UIElement.settingsUIs)
                     {
                         el.Update();
                     }
@@ -327,6 +357,19 @@ namespace monogameMinecraft
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
                     foreach (var el in UIElement.menuUIs)
+                    {
+                        el.DrawString(el.text);
+                    }
+                    _spriteBatch.End();
+                    break;
+
+
+
+                case GameStatus.Settings:
+                    GraphicsDevice.Clear(Color.CornflowerBlue);
+                    _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
+
+                    foreach (var el in UIElement.settingsUIs)
                     {
                         el.DrawString(el.text);
                     }

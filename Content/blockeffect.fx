@@ -256,7 +256,7 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler,-0.003);
     float shadow1;
     
-    if (length(viewPos - input.FragPos)>30)
+    if (length(viewPos - input.FragPos)>42)
     {
         shadow1 = ShadowCalculation(input.LightSpacePositionFar, ShadowMapFarSampler,-0.006); 
     }
