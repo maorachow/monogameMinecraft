@@ -32,6 +32,7 @@ namespace monogameMinecraft
         public Effect entityEffect;
         public Effect ssaoEffect;
         public Effect gBufferEffect;
+        public Effect skyboxEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
@@ -42,7 +43,9 @@ namespace monogameMinecraft
          public EntityRenderer entityRenderer;
        
         public ShadowRenderer shadowRenderer;
-    //    public SSAORenderer ssaoRenderer;
+        public SSAORenderer ssaoRenderer;
+        public SkyboxRenderer skyboxRenderer;
+        public TextureCube skyboxTex;
         public MinecraftGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -112,16 +115,18 @@ namespace monogameMinecraft
             //  chunkEffect = Content.Load<Effect>("blockeffect");
             gBufferEffect = Content.Load<Effect>("gbuffereffect");
             ssaoEffect = Content.Load<Effect>("ssaoeffect");
+            skyboxEffect = Content.Load<Effect>("skyboxeffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null);
             chunkRenderer.SetTexture(terrainTex,terrainNormal, terrainDepth);
-       //     ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferEffect, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
-          
+            ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferEffect, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
+             
             entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer);
             chunkRenderer.shadowRenderer = shadowRenderer;
             
             entityRenderer.shadowRenderer = shadowRenderer;
             shadowRenderer.zombieModel = Content.Load<Model>("zombiemodelref");
+            skyboxRenderer = new SkyboxRenderer(GraphicsDevice, skyboxEffect, null, gamePlayer,Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skyboxup"), Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skyboxdown"), Content.Load<Texture2D>("skybox"));
             GamePlayer.ReadPlayerData(gamePlayer,this);
             EntityBeh.InitEntityList();
 
@@ -159,6 +164,8 @@ namespace monogameMinecraft
 
         public void GoToSettings(object obj)
         {
+            GameOptions.ReadOptionsJson();
+            
             this.status = GameStatus.Settings;
         }
 
@@ -194,10 +201,11 @@ namespace monogameMinecraft
             terrainNormal = Content.Load<Texture2D>("terrainnormal");
             chunkSolidEffect = Content.Load<Effect>("blockeffect");
             terrainDepth = Content.Load<Texture2D>("terrainheight");
-           // terrainTex.
-           //       Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
-           //   button = new UIButton(new Vector2(0.1f, 0.1f), 0.3f, 0.2f, terrainTex, new Vector2(0.15f, 0.15f), sf, _spriteBatch,this.Window);
-           // chunkRenderer.atlas = terrainTex;
+       //     skyboxTex = Content.Load<TextureCube>("skybox");
+            // terrainTex.
+            //       Debug.WriteLine(terrainTex.Width + " " + terrainTex.Height);
+            //   button = new UIButton(new Vector2(0.1f, 0.1f), 0.3f, 0.2f, terrainTex, new Vector2(0.15f, 0.15f), sf, _spriteBatch,this.Window);
+            // chunkRenderer.atlas = terrainTex;
 
             // TODO: use this.Content to load your game content here
         }
@@ -315,16 +323,16 @@ namespace monogameMinecraft
         {  
             shadowRenderer.UpdateLightMatrices(gamePlayer);
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
-         
-            shadowRenderer.RenderShadow(gamePlayer);  
-         //   ssaoRenderer.Draw();
             
+            shadowRenderer.RenderShadow(gamePlayer);  
+          //  ssaoRenderer.Draw();
+            skyboxRenderer.Draw();
             chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
           
             entityRenderer.Draw();
            
             chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
-            
+           
 
             GraphicsDevice.DepthStencilState = DepthStencilState.None;
         }
@@ -350,6 +358,8 @@ namespace monogameMinecraft
                      _spriteBatch.Begin();
                     _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                     _spriteBatch.Draw(shadowRenderer.shadowMapTargetFar, new Rectangle(200, 200, 200, 200), Color.White);
+                    _spriteBatch.Draw(ssaoRenderer.renderTargetPositionDepth, new Rectangle(200, 400, 200, 200), Color.White);
+                        _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(400, 0, 400, 400), Color.White);
                     _spriteBatch.End();
                     break;
                 case GameStatus.Menu:

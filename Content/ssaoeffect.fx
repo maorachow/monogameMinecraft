@@ -18,8 +18,8 @@ sampler2D gPositionDepth = sampler_state
     MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    AddressU = Border;
+    AddressV = Border;
 };
 sampler2D gNormal = sampler_state
 {
@@ -28,8 +28,8 @@ sampler2D gNormal = sampler_state
     MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
-    AddressU = Clamp;
-    AddressV = Clamp;
+    AddressU = Border;
+    AddressV = Border;
 };
 sampler2D gProjectionDepth = sampler_state
 {
@@ -39,7 +39,7 @@ sampler2D gProjectionDepth = sampler_state
     MagFilter = Point;
     MinFilter = Point;
     AddressU = Border;
-    AddressV = Clamp;
+    AddressV = Border;
 };
 sampler2D gTangent = sampler_state
 {
@@ -48,8 +48,8 @@ sampler2D gTangent = sampler_state
     MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
-    AddressU = Wrap;
-    AddressV = Wrap;
+    AddressU = Border;
+    AddressV = Border;
 };
 sampler2D texNoise = sampler_state
 {
@@ -61,7 +61,7 @@ sampler2D texNoise = sampler_state
     AddressU = Wrap;
     AddressV = Wrap;
 };
-float3 samples[16];
+float3 samples[64];
 matrix g_matInvProjection;
 matrix invertView;
 float2 noiseScale = float2(800.0 / 4.0, 600.0 / 4.0);
@@ -82,7 +82,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     VertexShaderOutput output = (VertexShaderOutput) 0;
 
     output.Position = input.Position;
-    output.TexCoords = float2(input.TexCoords.x, input.TexCoords.y);
+    output.TexCoords =float2 (input.TexCoords.x,1-input.TexCoords.y);
 
     return output;
 }
@@ -91,9 +91,9 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 float3 VSPositionFromDepth(float2 vTexCoord)
 {
     // Get the depth value for this pixel
-    float z = tex2D(gProjectionDepth, vTexCoord).r;
+    float z = tex2D(gProjectionDepth, vTexCoord).r*2-1;
     // Get x/w and y/w from the viewport position
-    float x = vTexCoord.x*2-1 ;
+    float x = vTexCoord.x*2-1   ;
     float y = (1 - vTexCoord.y) * 2 - 1;
     float4 vProjectedPos = float4(x, y, z, 1 );
     // Transform by the inverse projection matrix
@@ -103,56 +103,93 @@ float3 VSPositionFromDepth(float2 vTexCoord)
     return vPositionVS.xyz / vPositionVS.w;
 }
  
- 
-float4 MainPS(VertexShaderOutput input) : COLOR
+float LinearizeDepth(float depth)//0.6
 {
-    float3 fragPos = VSPositionFromDepth(input.TexCoords );
-    //fragPos = tex2D(gPositionDepth, input.TexCoords).xyz*2-1 ;
-    float3 normal = tex2D(gNormal, input.TexCoords).rgb * 2 - 1;
-    float3 randomVec = tex2D(texNoise, input.TexCoords  *4000).xyz * 2 - 1;
-        
-    float3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
-    float3 bitangent = cross(normal, tangent);
-    float3x3 TBN = float3x3(tangent, bitangent, normal);
-    float occlusion = 0.0;
-    float radius =0.5;
-      float3 sampleZero = mul(float3(0, 0.0001, 0),TBN);
-    sampleZero = fragPos + sampleZero * radius;
-        
-        // project sample position (to sample texture) (to get position on screen/texture)
-    float4 offsetZero = float4(sampleZero, 1.0);
-    offsetZero = mul(projection, offsetZero); // from view to clip-space
-        offsetZero.xyz /= offsetZero.w; // perspective divide
-    offsetZero.xy = offsetZero.xy * 0.5 + 0.5; // transform to range 0.0 - 1.0
-     
-        // get sample depth
-    float sampleDepthZero = (-tex2D(gProjectionDepth, offsetZero.xy).r);
+    float near_plane = 0.1;
+    float far_plane = 50;
+    float z = depth * 2.0 - 1.0; // Back to NDC //0.2
+    return (2.0 * near_plane * far_plane) / (far_plane + near_plane - z * (far_plane - near_plane));
+}
+/*float4 MainPS(VertexShaderOutput input) : COLOR
+{
+    float3 fragPos = tex2D(gPositionDepth, input.TexCoords).rgb*2-1;
    
-    for (int i = 0; i < 16; ++i)
+    
+        
+    
+    float occlusion = 0.0;
+    float radius =0.1;
+      
+    float3 sampleZ = float3(0, 0, 0);
+    sampleZ = fragPos;
+        
+      
+    float4 offsetZ = float4(sampleZ, 1);
+    offsetZ = mul(projection, offsetZ);  
+    offsetZ.xyz /= offsetZ.w;  
+    offsetZ.xyz = offsetZ.xyz * 0.5 + 0.5; 
+      
+    float sampleDepthZ = tex2D(gProjectionDepth, offsetZ.xy).r*2-1;
+    [unroll]
+    for (int i = 0; i < 16;i++)
     {
    
-        float3 sample = mul(samples[i], TBN);
-        sample =  fragPos+ sample * radius;
+        float3 sample = samples[i] ;
+        sample = fragPos + sample * radius;
         
-        // project sample position (to sample texture) (to get position on screen/texture)
+       
         float4 offset = float4(sample, 1.0);
-        offset = mul(projection , offset); // from view to clip-space
-        offset.xyz /= offset.w; // perspective divide
-        offset.xyz = offset.xyz * 0.5 + 0.5; // transform to range 0.0 - 1.0
+        offset = mul(projection , offset); 
+        offset.xyz  /= offset.w; 
+        offset.xyz  = offset.xyz  * 0.5 + 0.5; 
      
-        // get sample depth
-        float sampleDepth = (-tex2D(gProjectionDepth, offset.xy).r) ; // Get depth value of kernel sample
-      
-        // range check & accumulate
-       float rangeCheck = smoothstep(0.0, 1.0, radius / abs(fragPos.z - sampleDepth));
-        occlusion += (sampleDepth > sampleDepthZero ? 1.0 : 0.0);
+       
+        float sampleDepth = tex2D(gProjectionDepth, offset.xy).r * 2 - 1;
+ 
+        occlusion += (sampleDepth > sampleDepthZ ? 0.0 : 1.0);
+         
     }
     
     occlusion = 1.0- (occlusion / 16);
-    return occlusion;
+    return float4(occlusion, occlusion, occlusion, 1);
 
+}*/
+float4 MainPS(VertexShaderOutput input) : COLOR
+{
+ 
+    float depth = tex2D(gProjectionDepth, input.TexCoords).r*2-1;
+    
+        
+    float occlusion =0;
+     
+    for (int i = 0; i < 64; i++)
+    {
+        float2 sp = samples[i].xy *0.01;
+        float occ_depth = tex2D(gProjectionDepth, input.TexCoords + sp).r * 2 - 1;
+ 
+
+        if (depth > occ_depth)
+        {
+            occlusion += 0;
+        }
+        else
+        {
+            
+                occlusion += 1; 
+            
+           
+        }
+            
+
+	 
+    }
+
+    occlusion /= 64;
+    
+   
+    return float4(occlusion, occlusion, occlusion, 1.0);
+  
 }
-
 technique SSAOEffect
 {
     pass P0
@@ -160,7 +197,7 @@ technique SSAOEffect
         VertexShader = compile VS_SHADERMODEL MainVS();
         PixelShader = compile PS_SHADERMODEL MainPS();
     }
-};
+}; 
 /*matrix View;
 matrix InverseProjection;
 

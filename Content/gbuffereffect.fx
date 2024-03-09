@@ -14,7 +14,7 @@ struct VertexShaderInput
 
 struct VertexShaderOutput
 {
-    float4 PositionT : SV_Position;
+    float4 Position  : SV_Position;
     float4 PositionV : TEXCOORD1;
     
     float4 PositionP : TEXCOORD4;
@@ -51,20 +51,14 @@ float3x3 inverse_mat3(float3x3 m)
     return Inverse;
 } 
  
-float LinearizeDepth(float depth)//0.6
-{
-    float near_plane = 1;
-    float far_plane = 500;
-    float z = depth * 2.0 - 1.0; // Back to NDC //0.2
-    return (2.0 * near_plane * far_plane) / (far_plane + near_plane - z * (far_plane - near_plane));
-}
+ 
 VertexShaderOutput MainVS(in VertexShaderInput input)
 {
 	VertexShaderOutput output = (VertexShaderOutput)0;
 	
     float4 worldPosition = mul(input.Position, World);
     float4 viewPosition = mul(worldPosition, View);
-    output.PositionT = mul(viewPosition, Projection);
+    output.Position  = mul(viewPosition, Projection);
     
     output.PositionV = viewPosition;
     output.PositionP = mul(viewPosition, Projection);
@@ -81,8 +75,8 @@ PixelShaderOutput MainPS(VertexShaderOutput input)
 {
     PixelShaderOutput psOut = (PixelShaderOutput) 0;
    
-    psOut.ViewPosition.xyz = input.PositionV.xyz *0.5+0.5 ;
-    psOut.ViewPosition.a = (input.PositionP.z / input.PositionP.w)  ;
+    psOut.ViewPosition.xyzw = input.PositionV.xyzw *0.5+0.5 ;
+   
    
     psOut.ProjectionDepth.rgb = (input.PositionP.z / input.PositionP.w) * 0.5 + 0.5;
     psOut.ProjectionDepth.a = 1;
@@ -99,3 +93,56 @@ technique GBuffer
         PixelShader = compile ps_3_0 MainPS();
     }
 };
+/*matrix World;
+matrix View;
+matrix Projection;
+
+ 
+
+float FarClip;
+
+struct VS_INPUT
+{
+    float4 Position : POSITION0;
+    float3 Normal : NORMAL0;
+};
+
+struct VS_OUTPUT
+{
+    float4 Position : POSITION0;
+    float3 Normal : TEXCOORD0;
+    float4 vPositionVS : TEXCOORD1;
+};
+
+VS_OUTPUT DepthVertexShaderFunction(VS_INPUT IN)
+{
+    VS_OUTPUT Output;
+    float4x4 WorldView;
+    float4x4 ITWorldView;
+    float4x4 WorldViewProjection;
+    WorldViewProjection = World * View * Projection;
+    WorldView = World * View;
+    ITWorldView = World * View;
+    Output.Position = mul(IN.Position, mul(mul(World, View),);
+    Output.vPositionVS = mul(IN.Position, WorldView);
+    Output.Normal = mul(IN.Normal, ITWorldView);
+
+    return Output;
+}
+
+float4 DepthPixelShaderFunction(VS_OUTPUT IN) : COLOR
+{
+    float depth = IN.vPositionVS.z / 50;
+    IN.Normal = normalize(IN.Normal);
+    return float4(IN.Normal.x, IN.Normal.y, IN.Normal.z, depth);
+}
+
+technique Depth
+{
+    pass Pass1
+    {
+
+        VertexShader = compile vs_3_0 DepthVertexShaderFunction();
+        PixelShader = compile ps_3_0 DepthPixelShaderFunction();
+    }
+}*/

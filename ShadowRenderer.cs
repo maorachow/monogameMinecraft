@@ -46,7 +46,7 @@ namespace monogameMinecraft
         {
             lightView = Matrix.CreateLookAt(player.playerPos+ new Vector3(10, 50, 30), player.playerPos, Vector3.UnitY);
      //    lightSpaceMat = lightView  *lightProjection;
-            lightSpaceMat = GetLightSpaceMatrix(0.1f, 30f, player, new Vector3(10, 50, 30));
+            lightSpaceMat = GetLightSpaceMatrix(0.1f, 40f, player, new Vector3(10, 50, 30));
             lightSpaceMatFar = GetLightSpaceMatrix(30f, 300f, player, new Vector3(10, 50, 30));
         }
 

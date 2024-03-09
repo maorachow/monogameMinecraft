@@ -25,6 +25,7 @@ namespace monogameMinecraft
         //Dictionary<Vector2Int,Chunk> RenderingChunks
         
         public ShadowRenderer shadowRenderer;
+      
         public void SetTexture(Texture2D tex,Texture2D texNormal,Texture2D textureDepth)
         {
             atlas= tex;
@@ -97,6 +98,7 @@ namespace monogameMinecraft
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
             basicShader.Parameters["TextureDepth"].SetValue(atlasDepth);
+         
             basicShader.Parameters["View"].SetValue(player.cam.viewMatrix);
             basicShader.Parameters["Projection"].SetValue( player.cam.projectionMatrix);
             basicShader.Parameters["fogStart"].SetValue(256.0f);

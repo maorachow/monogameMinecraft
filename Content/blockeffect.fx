@@ -44,6 +44,16 @@ sampler2D depthSampler = sampler_state
     AddressU = Wrap;
     AddressV = Wrap;
 };
+sampler2D AOSampler = sampler_state
+{
+    Texture = <TextureAO>;
+ 
+    MipFilter = Linear;
+    MagFilter = Point;
+    MinFilter = Point;
+    AddressU = Wrap;
+    AddressV = Wrap;
+};
 sampler ShadowMapSampler = sampler_state
 {
     texture = <ShadowMap>;
@@ -235,7 +245,10 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
         texCoords = input.TexureCoordinate;
     }*/
     float3 objectColor = tex2D(textureSampler, texCoords).rgb;
-    float3 ambient = LightColor * 0.2;
+   
+   
+    
+    float3 ambient = LightColor * 0.2 ;
     float3 texNormal = tex2D(normalSampler, texCoords).rgb;
     if (texNormal.r <= 0.001 && texNormal.g <= 0.001 && texNormal.b <= 0.001)
     {
