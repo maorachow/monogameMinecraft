@@ -75,10 +75,10 @@ PixelShaderOutput MainPS(VertexShaderOutput input)
 {
     PixelShaderOutput psOut = (PixelShaderOutput) 0;
    
-    psOut.ViewPosition.xyzw = input.PositionV.xyzw *0.5+0.5 ;
+    psOut.ViewPosition.xyzw = input.PositionV.xyzw ;
    
    
-    psOut.ProjectionDepth.rgb = (input.PositionP.z / input.PositionP.w) * 0.5 + 0.5;
+    psOut.ProjectionDepth.rgb = (input.PositionP.z / input.PositionP.w)*0.5+0.5;
     psOut.ProjectionDepth.a = 1;
     psOut.Normal = float4(normalize(input.Normal) * 0.5 + 0.5, 1);
     return psOut;

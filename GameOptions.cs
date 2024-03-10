@@ -18,6 +18,7 @@ namespace monogameMinecraft
         public static int renderDistance = 512;
         public static bool renderShadow = false;
         public static bool renderFarShadow = false;
+        public static bool renderSSAO=false;
         public static void ReadOptionsJson()
         {
             if (!Directory.Exists(path + "unityMinecraftServerData"))
@@ -41,6 +42,7 @@ namespace monogameMinecraft
             renderDistance = dataOptions.renderDistance;
             renderShadow = dataOptions.renderShadow;
             renderFarShadow = dataOptions.renderFarShadow;
+                    renderSSAO= dataOptions.renderSSAO;
                 }catch(Exception ex)
                 {
                     Debug.WriteLine(ex.ToString());
@@ -66,13 +68,14 @@ namespace monogameMinecraft
             
 
           
-            GameOptionsData data=new GameOptionsData(GameOptions.renderDistance, GameOptions.renderShadow, GameOptions.renderFarShadow);
+            GameOptionsData data=new GameOptionsData(GameOptions.renderDistance, GameOptions.renderShadow, GameOptions.renderFarShadow,GameOptions.renderSSAO);
             string dataSerialized = JsonSerializer.Serialize<GameOptionsData>(data);
             File.WriteAllText(path + "unityMinecraftServerData/options.json", dataSerialized);
             
         }
         public static void ChangeRenderDistance(UIButton obj)
         {
+            obj.text = "Render Distance : " + renderDistance;
             renderDistance += 32;
             if (renderDistance >= 544)
             {
@@ -82,13 +85,23 @@ namespace monogameMinecraft
         }
         public static void ChangeRenderShadow(UIButton obj)
         {
+            obj.text = "Render Shadow : " + renderShadow.ToString();
             renderShadow = !renderShadow;
             obj.text="Render Shadow : "+renderShadow.ToString();
         }
         public static void ChangeRenderFarShadow(UIButton obj)
         {
+
+            obj.text = "Render Far Shadow : " + renderFarShadow.ToString();
             renderFarShadow = !renderFarShadow;
             obj.text = "Render Far Shadow : " + renderFarShadow.ToString();
+        }
+        public static void ChangeRenderSSAO(UIButton obj)
+        {
+
+            obj.text = "Render SSAO : " + renderSSAO.ToString();
+            renderSSAO = !renderSSAO;
+            obj.text = "Render SSAO : " + renderSSAO.ToString();
         }
     }
 
@@ -100,11 +113,14 @@ namespace monogameMinecraft
         public bool renderShadow;
         [JsonInclude]
         public bool renderFarShadow;
-        public GameOptionsData(int renderDistance,bool renderShadow,bool renderFarShadow)
+        [JsonInclude]
+        public bool renderSSAO;
+        public GameOptionsData(int renderDistance,bool renderShadow,bool renderFarShadow,bool renderSSAO)
         {
             this.renderDistance = renderDistance;
             this.renderShadow = renderShadow;
             this.renderFarShadow = renderFarShadow;
+            this.renderSSAO= renderSSAO;
         }
     }
 }

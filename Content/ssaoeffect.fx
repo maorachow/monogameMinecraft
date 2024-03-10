@@ -157,14 +157,14 @@ float LinearizeDepth(float depth)//0.6
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
  
-    float depth = tex2D(gProjectionDepth, input.TexCoords).r*2-1;
+    float depth = tex2D(gProjectionDepth, input.TexCoords).r*2-1  ;
     
         
     float occlusion =0;
      
     for (int i = 0; i < 64; i++)
     {
-        float2 sp = samples[i].xy *0.01;
+        float2 sp = samples[i].xy *0.18;
         float occ_depth = tex2D(gProjectionDepth, input.TexCoords + sp).r * 2 - 1;
  
 

@@ -80,8 +80,8 @@ namespace monogameMinecraft
                 sample.Normalize();
                 sample *= random.NextSingle();
 
-                float scale = (float)i / 16f;
-                scale = MathHelper.Lerp(0.1f, 1.0f, scale * scale);
+                float scale = (float)i /64f;
+                scale = MathHelper.Lerp(0.1f,1f, scale * scale);
                 sample *= scale;
                 ssaoKernel.Add(sample);
             }
@@ -96,18 +96,24 @@ namespace monogameMinecraft
         Random random = new Random();
         public void Draw()
         {
-            ssaoKernel.Clear();
-            for (int i = 0; i < 64; ++i)
+               
+            if (GameOptions.renderSSAO == false)
             {
-                Vector3 sample = new Vector3(random.NextSingle() * 2f - 1f, random.NextSingle() * 2f - 1f, random.NextSingle() * 2f - 1f);
-                sample.Normalize();
-                sample *= random.NextSingle();
+                RenderQuad(ssaoTarget, this.ssaoEffect,true);
+                return;
+            } 
+            ssaoKernel.Clear();
+                  for (int i = 0; i < 64; ++i)
+                  {
+                      Vector3 sample = new Vector3(random.NextSingle() * 2f - 1f, random.NextSingle() * 2f - 1f, random.NextSingle() * 2f - 1f);
+                      sample.Normalize();
+                      sample *= random.NextSingle();
 
-                float scale = (float)i / 16f;
-                scale = MathHelper.Lerp(0.1f, 1.0f, scale * scale);
-                sample *= scale;
-                ssaoKernel.Add(sample);
-            }
+                      float scale = (float)i / 64f;
+                      scale = MathHelper.Lerp(0.1f, 1.0f, scale * scale);
+                      sample *= scale;
+                      ssaoKernel.Add(sample);
+                  }
             this.binding[0] = new RenderTargetBinding(this.renderTargetPositionDepth);
             this.binding[1] = new RenderTargetBinding(this.renderTargetProjectionDepth);
             this.binding[2] = new RenderTargetBinding(this.renderTargetNormal);
@@ -116,21 +122,27 @@ namespace monogameMinecraft
             graphicsDevice.SetRenderTargets(null);
             graphicsDevice.Clear(Color.CornflowerBlue);
        //     ssaoEffect.Parameters["View"].SetValue(player.cam.viewMatrix);
-    //  ssaoEffect.Parameters["PositionDepthTex"].SetValue(this.renderTargetPositionDepth);
+   //  ssaoEffect.Parameters["PositionDepthTex"].SetValue(this.renderTargetPositionDepth);
            ssaoEffect.Parameters["ProjectionDepthTex"].SetValue(this.renderTargetProjectionDepth);
-       //   ssaoEffect.Parameters["NormalTex"].SetValue(this.renderTargetNormal);
-        //        ssaoEffect.Parameters["NoiseTex"].SetValue(this.ssaoNoiseTexture);
-           //   ssaoEffect.Parameters["projection"].SetValue(player.cam.projectionMatrix);
-     //       ssaoEffect.Parameters["g_matInvProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix));
+      //    ssaoEffect.Parameters["NormalTex"].SetValue(this.renderTargetNormal);
+       //         ssaoEffect.Parameters["NoiseTex"].SetValue(this.ssaoNoiseTexture);
+       //       ssaoEffect.Parameters["projection"].SetValue(player.cam.projectionMatrix);
+  //   ssaoEffect.Parameters["g_matInvProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix));
          
            ssaoEffect.Parameters["samples"].SetValue(ssaoKernel.ToArray());
             RenderQuad(ssaoTarget, this.ssaoEffect);
         }
-        public void RenderQuad(RenderTarget2D target,Effect quadEffect)
+        public void RenderQuad(RenderTarget2D target,Effect quadEffect,bool isPureWhite=false)
         {
             graphicsDevice.SetRenderTarget(target);
            
-            
+            if(isPureWhite)
+            {
+                graphicsDevice.Clear(Color.White);
+                graphicsDevice.SetRenderTarget(null);
+                graphicsDevice.Clear(Color.CornflowerBlue);
+                return;
+            }
 
             graphicsDevice.SetVertexBuffer(quadVertexBuffer);
             graphicsDevice.Indices= quadIndexBuffer;
@@ -140,7 +152,7 @@ namespace monogameMinecraft
                 pass.Apply();
                 graphicsDevice.DrawPrimitives(PrimitiveType.TriangleList, 0,6);
             }
-            
+       //    graphicsDevice.Clear(Color.White);
             graphicsDevice.SetRenderTarget(null);
             graphicsDevice.Clear(Color.CornflowerBlue);
         }

@@ -13,6 +13,7 @@ float3 LightPos = float3(20, 70, 30);
 float3 LightDir = float3(20, 40, 30);
 float3 LightColor = float3(1, 1, 1);
 bool renderShadow;
+bool receiveAO;
 sampler2D textureSampler = sampler_state
 {
     Texture = <Texture>;
@@ -51,8 +52,8 @@ sampler2D AOSampler = sampler_state
     MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
-    AddressU = Wrap;
-    AddressV = Wrap;
+    AddressU = Border;
+    AddressV = Border;
 };
 sampler ShadowMapSampler = sampler_state
 {
@@ -91,7 +92,8 @@ struct VertexShaderOutput
     float3 TangentViewPos : TEXCOORD11;
     float3 FragPos : TEXCOORD1;
     float4 LightSpacePosition : TEXCOORD2;
-    float4 LightSpacePositionFar : TEXCOORD12;
+   
+    float2 ScreenSpaceUV : TEXCOORD12;
     
 };
 
@@ -111,6 +113,12 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     //if(Alpha<1){output.Position.y=0;}
    
     output.Normal=input.Normal;
+    float4 screenPosition = output.Position;
+    screenPosition.xyz /= screenPosition.w;
+    screenPosition.xy = screenPosition.xy*0.5 + 0.5;
+    screenPosition.y = 1 - screenPosition.y;
+    output.ScreenSpaceUV = screenPosition;
+     
     float3x3 worldMat = (float3x3) World;
     float3 BitTangent = cross(input.Normal, input.Tangent);
     float3 T = normalize(mul(input.Tangent, World));
@@ -122,7 +130,7 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     output.TangentViewPos = mul(output.TBN, viewPos);
     output.TexureCoordinate = input.TexureCoordinate;
     output.LightSpacePosition = mul(worldPosition, LightSpaceMat);
-    output.LightSpacePositionFar = mul(worldPosition, LightSpaceMatFar);
+   // output.LightSpacePositionFar = mul(worldPosition, LightSpaceMatFar);
     return output;
 }
 float ShadowCalculation(float4 fragPosLightSpace,sampler2D sp,float bias)
@@ -203,6 +211,7 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir)
     float2 currentTexCoords = texCoords;
     float currentDepthMapValue = tex2D(depthSampler, currentTexCoords).r;
     int i = 10;
+    [unroll]
     while (currentLayerDepth < currentDepthMapValue&&i>0)
     {
         i--;
@@ -244,11 +253,27 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     {
         texCoords = input.TexureCoordinate;
     }*/
+   
+  
+    float3 ambient;
+    
+    if (receiveAO==true)
+    {
+         ambient = (clamp(tex2D(AOSampler, input.ScreenSpaceUV.xy).r * 2,0.1,1))* 0.2 * LightColor;  
+    }
+      
+    if (receiveAO == false)
+    {
+       ambient =  0.2 * LightColor;  
+    }
+     
+       
+    
+    
+    
     float3 objectColor = tex2D(textureSampler, texCoords).rgb;
    
    
-    
-    float3 ambient = LightColor * 0.2 ;
     float3 texNormal = tex2D(normalSampler, texCoords).rgb;
     if (texNormal.r <= 0.001 && texNormal.g <= 0.001 && texNormal.b <= 0.001)
     {
@@ -268,10 +293,10 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float3 specular = 0.8 * spec * LightColor;
     float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler,-0.003);
     float shadow1;
-    
+    float4 LightSpacePositionFar = mul(float4(input.FragPos, 1), LightSpaceMatFar);
     if (length(viewPos - input.FragPos)>42)
     {
-        shadow1 = ShadowCalculation(input.LightSpacePositionFar, ShadowMapFarSampler,-0.006); 
+        shadow1 = ShadowCalculation(LightSpacePositionFar, ShadowMapFarSampler, -0.006);
     }
     else
     {
@@ -281,6 +306,7 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float shadowFinal = clamp(  shadow+shadow1, 0, 1);
     float3 result = (ambient + (1 - shadowFinal) * (diffuse + specular)) * objectColor;
     //
+  //  result = mapAO;
      
 
     output.Color = float4(result, 1);
@@ -292,11 +318,11 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float eyeDist = length(viewPostrans);
     float fogIntensity = max((eyeDist - fogStart),0) / (fogRange - fogStart);
      fogIntensity = clamp(fogIntensity, 0,1);
-    if (output.Color.r < 0.01 && output.Color.g < 0.01 && output.Color.b < 0.01)
+   if (output.Color.r < 0.00001 && output.Color.g < 0.00001 && output.Color.b < 0.00001)
     {
         output.Color.a = 0;
     }
-  
+  //  output.Color.a = tex2D(textureSampler, texCoords).a;
     
     
     

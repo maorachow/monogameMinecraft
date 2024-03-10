@@ -25,7 +25,7 @@ namespace monogameMinecraft
         //Dictionary<Vector2Int,Chunk> RenderingChunks
         
         public ShadowRenderer shadowRenderer;
-      
+        public SSAORenderer SSAORenderer;
         public void SetTexture(Texture2D tex,Texture2D texNormal,Texture2D textureDepth)
         {
             atlas= tex;
@@ -34,6 +34,7 @@ namespace monogameMinecraft
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
             basicShader.Parameters["TextureDepth"].SetValue(atlasDepth);
+       //     basicShader.Parameters["TextureAO"].SetValue(SSAORenderer.ssaoTarget);
         }
         public ChunkRenderer(MinecraftGame game, GraphicsDevice device,Effect basicSolidShader,ShadowRenderer shadowRenderer)
         {
@@ -109,7 +110,8 @@ namespace monogameMinecraft
             basicShader.Parameters["viewPos"].SetValue(player.cam.position);
             // shadowmapShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
             //     RenderShadow(RenderingChunks, player,lightSpaceMat);
-
+            basicShader.Parameters["TextureAO"].SetValue(SSAORenderer.ssaoTarget);
+            basicShader.Parameters["receiveAO"].SetValue(true);
             isBusy = true; 
             BoundingFrustum frustum=new BoundingFrustum(player.cam.viewMatrix*player.cam.projectionMatrix);
             
@@ -159,6 +161,7 @@ namespace monogameMinecraft
             basicShader.Parameters["LightSpaceMatFar"].SetValue(shadowRenderer.lightSpaceMatFar);
             basicShader.Parameters["ShadowMap"].SetValue(shadowRenderer.shadowMapTarget);
             basicShader.Parameters["ShadowMapFar"].SetValue(shadowRenderer.shadowMapTargetFar);
+            basicShader.Parameters["receiveAO"].SetValue(false);
             foreach (var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;

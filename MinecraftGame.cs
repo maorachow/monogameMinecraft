@@ -117,13 +117,14 @@ namespace monogameMinecraft
             ssaoEffect = Content.Load<Effect>("ssaoeffect");
             skyboxEffect = Content.Load<Effect>("skyboxeffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null);
+           
             chunkRenderer.SetTexture(terrainTex,terrainNormal, terrainDepth);
             ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferEffect, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
              
             entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer);
             chunkRenderer.shadowRenderer = shadowRenderer;
-            
+            chunkRenderer.SSAORenderer = ssaoRenderer;
             entityRenderer.shadowRenderer = shadowRenderer;
             shadowRenderer.zombieModel = Content.Load<Model>("zombiemodelref");
             skyboxRenderer = new SkyboxRenderer(GraphicsDevice, skyboxEffect, null, gamePlayer,Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skyboxup"), Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skyboxdown"), Content.Load<Texture2D>("skybox"));
@@ -325,8 +326,9 @@ namespace monogameMinecraft
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
             
             shadowRenderer.RenderShadow(gamePlayer);  
-          //  ssaoRenderer.Draw();
+             ssaoRenderer.Draw();
             skyboxRenderer.Draw();
+           
             chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
           
             entityRenderer.Draw();
@@ -347,6 +349,7 @@ namespace monogameMinecraft
                     GraphicsDevice.Clear(Color.CornflowerBlue);
                     // Debug.WriteLine(ChunkManager.chunks.Count);
                     gamePlayer.cam.updateCameraVectors();
+                   
                     RenderWorld();
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
