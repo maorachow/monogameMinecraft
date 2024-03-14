@@ -80,6 +80,15 @@ namespace monogameMinecraft
             switch (status)
             {
                 case GameStatus.Started:
+
+
+                    int width = GraphicsDevice.PresentationParameters.BackBufferWidth;
+                    int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
+                    ssaoRenderer.renderTargetPositionDepth = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+                    ssaoRenderer.renderTargetProjectionDepth = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Single, DepthFormat.Depth24);
+                    ssaoRenderer.renderTargetNormal = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
+                    ssaoRenderer.ssaoTarget = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
+
                     float aspectRatio = GraphicsDevice.Viewport.Width / (float)GraphicsDevice.Viewport.Height;
                     gamePlayer.cam.aspectRatio= aspectRatio;
                     gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), aspectRatio, 0.1f, 1000f);
@@ -361,8 +370,10 @@ namespace monogameMinecraft
                      _spriteBatch.Begin();
                     _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                     _spriteBatch.Draw(shadowRenderer.shadowMapTargetFar, new Rectangle(200, 200, 200, 200), Color.White);
-                    _spriteBatch.Draw(ssaoRenderer.renderTargetPositionDepth, new Rectangle(200, 400, 200, 200), Color.White);
-                        _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(400, 0, 400, 400), Color.White);
+                   _spriteBatch.Draw(ssaoRenderer.renderTargetPositionDepth, new Rectangle(200, 400, 200, 200), Color.White);
+                       _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(400, 0, 200, 200), Color.White);
+                    _spriteBatch.Draw(ssaoRenderer.renderTargetProjectionDepth, new Rectangle(400, 200, 200, 200), Color.White);
+                    _spriteBatch.Draw(ssaoRenderer.renderTargetNormal, new Rectangle(600, 200, 200, 200), Color.White);
                     _spriteBatch.End();
                     break;
                 case GameStatus.Menu:

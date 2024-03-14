@@ -1,6 +1,6 @@
 ﻿ 
 
-
+/*
 #if OPENGL
 #define SV_POSITION POSITION
 #define VS_SHADERMODEL vs_3_0
@@ -9,17 +9,21 @@
 #define VS_SHADERMODEL vs_4_0_level_9_1
 #define PS_SHADERMODEL ps_4_0_level_9_1
 #endif
-
+#if MGFX
+// This unused parameter helps avoiding crashes due to compiler optimizations in monogame
+float4 Float4Parameter0 : Float4Parameter0;
+#endif
 matrix projection;
-sampler2D gPositionDepth = sampler_state
+matrix invProjection;
+sampler2D gPosition  = sampler_state
 {
-    Texture = <PositionDepthTex>;
+    Texture = (PositionDepthTex);
  
     MipFilter = Linear;
-    MagFilter = Point;
-    MinFilter = Point;
-    AddressU = Border;
-    AddressV = Border;
+    MagFilter = Linear;
+    MinFilter = Linear;
+    AddressU = Wrap;
+    AddressV = Wrap;
 };
 sampler2D gNormal = sampler_state
 {
@@ -28,8 +32,8 @@ sampler2D gNormal = sampler_state
     MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
-    AddressU = Border;
-    AddressV = Border;
+    AddressU = Wrap;
+    AddressV = Wrap;
 };
 sampler2D gProjectionDepth = sampler_state
 {
@@ -38,8 +42,8 @@ sampler2D gProjectionDepth = sampler_state
     MipFilter = Linear;
     MagFilter = Point;
     MinFilter = Point;
-    AddressU = Border;
-    AddressV = Border;
+    AddressU = Wrap;
+    AddressV = Wrap;
 };
 sampler2D gTangent = sampler_state
 {
@@ -62,7 +66,7 @@ sampler2D texNoise = sampler_state
     AddressV = Wrap;
 };
 float3 samples[64];
-matrix g_matInvProjection;
+
 matrix invertView;
 float2 noiseScale = float2(800.0 / 4.0, 600.0 / 4.0);
 struct VertexShaderInput
@@ -82,59 +86,41 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     VertexShaderOutput output = (VertexShaderOutput) 0;
 
     output.Position = input.Position;
-    output.TexCoords =float2 (input.TexCoords.x,1-input.TexCoords.y);
+    output.TexCoords = float2(input.TexCoords.x,input.TexCoords.y);
 
     return output;
 }
 
  
-float3 VSPositionFromDepth(float2 vTexCoord)
+ 
+float3 PositionFromDepth(float2 vTexCoord)
 {
     // Get the depth value for this pixel
-    float z = tex2D(gProjectionDepth, vTexCoord).r*2-1;
+    float z = tex2D(gProjectionDepth, vTexCoord);
     // Get x/w and y/w from the viewport position
-    float x = vTexCoord.x*2-1   ;
+    float x = vTexCoord.x * 2 - 1;
     float y = (1 - vTexCoord.y) * 2 - 1;
-    float4 vProjectedPos = float4(x, y, z, 1 );
+    float4 vProjectedPos = float4(x, y, z, 1.0f);
     // Transform by the inverse projection matrix
-    float4 vPositionVS = mul(vProjectedPos, g_matInvProjection);
-   
+    float4 vPositionVS = mul(vProjectedPos, invProjection);
     // Divide by w to get the view-space position
     return vPositionVS.xyz / vPositionVS.w;
 }
  
-float LinearizeDepth(float depth)//0.6
+float4 MainPS(VertexShaderOutput input) : COLOR
 {
-    float near_plane = 0.1;
-    float far_plane = 50;
-    float z = depth * 2.0 - 1.0; // Back to NDC //0.2
-    return (2.0 * near_plane * far_plane) / (far_plane + near_plane - z * (far_plane - near_plane));
-}
-/*float4 MainPS(VertexShaderOutput input) : COLOR
-{
-    float3 fragPos = tex2D(gPositionDepth, input.TexCoords).rgb*2-1;
-   
-    
-        
-    
+ 
+    float3 fragPos = PositionFromDepth(input.TexCoords*100);
+   // float3 fragPos = mul(projFragPos, invProjection);
+    //fragPos = VSPositionFromDepth(input.TexCoords);
     float occlusion = 0.0;
     float radius =0.1;
-      
-    float3 sampleZ = float3(0, 0, 0);
-    sampleZ = fragPos;
-        
-      
-    float4 offsetZ = float4(sampleZ, 1);
-    offsetZ = mul(projection, offsetZ);  
-    offsetZ.xyz /= offsetZ.w;  
-    offsetZ.xyz = offsetZ.xyz * 0.5 + 0.5; 
-      
-    float sampleDepthZ = tex2D(gProjectionDepth, offsetZ.xy).r*2-1;
-    [unroll]
-    for (int i = 0; i < 16;i++)
+  
+    float depth = tex2D(gProjectionDepth, input.TexCoords.xy).r;
+    for (int i = 0; i < 64;i++)
     {
    
-        float3 sample = samples[i] ;
+        float3 sample = samples[i];
         sample = fragPos + sample * radius;
         
        
@@ -144,31 +130,33 @@ float LinearizeDepth(float depth)//0.6
         offset.xyz  = offset.xyz  * 0.5 + 0.5; 
      
        
-        float sampleDepth = tex2D(gProjectionDepth, offset.xy).r * 2 - 1;
+        float sampleDepth = tex2D(gProjectionDepth, offset.xy).r ;
  
-        occlusion += (sampleDepth > sampleDepthZ ? 0.0 : 1.0);
+        occlusion += (sampleDepth > depth ? 0.0 : 1.0);
          
     }
     
-    occlusion = 1.0- (occlusion / 16);
+    occlusion = (occlusion/64);
     return float4(occlusion, occlusion, occlusion, 1);
 
 }*/
-float4 MainPS(VertexShaderOutput input) : COLOR
+
+ 
+/*float4 MainPS(VertexShaderOutput input) : COLOR
 {
  
-    float depth = tex2D(gProjectionDepth, input.TexCoords).r*2-1  ;
-    
+    float depth = tex2D(gProjectionDepth, input.TexCoords).r ;
+    float3 fragPos = PositionFromDepth(input.TexCoords);
         
     float occlusion =0;
      
     for (int i = 0; i < 64; i++)
     {
-        float2 sp = samples[i].xy *0.18;
-        float occ_depth = tex2D(gProjectionDepth, input.TexCoords + sp).r * 2 - 1;
+        float2 sp = samples[i].xy *0.18 /depth;
+        float occ_depth = tex2D(gProjectionDepth, input.TexCoords + sp).r;
  
 
-        if (depth > occ_depth)
+        if (depth >  occ_depth)
         {
             occlusion += 0;
         }
@@ -179,219 +167,182 @@ float4 MainPS(VertexShaderOutput input) : COLOR
             
            
         }
-            
-
-	 
-    }
-
+     }
     occlusion /= 64;
-    
-   
     return float4(occlusion, occlusion, occlusion, 1.0);
   
 }
-technique SSAOEffect
+ 
+ */
+
+float4x4 param_inverseViewProjectionMatrix;
+float4x4 param_inverseViewMatrix;
+float3 param_frustumCornersVS[4];
+float4x4 g_matInvProjection;
+ float param_randomSize=1;
+ float param_sampleRadius=1;
+ float param_intensity=1;
+ float param_scale=1;
+float param_bias;
+float2 param_screenSize;
+
+texture param_normalMap;
+texture param_depthMap;
+texture param_randomMap;
+
+
+
+sampler normalSampler = sampler_state
 {
-    pass P0
-    {
-        VertexShader = compile VS_SHADERMODEL MainVS();
-        PixelShader = compile PS_SHADERMODEL MainPS();
-    }
-}; 
-/*matrix View;
-matrix InverseProjection;
-
-Texture2D NormalMap;
-Texture2D DepthMap;
-
-int Samples = 8;
-
-float Strength = 4;
-
-float SampleRadius = 1; //0.05 - 0.5
-
-float2 Resolution = float2(3840, 2160);
-
-SamplerState texSampler
-{
+    Texture = (param_normalMap);
     AddressU = CLAMP;
     AddressV = CLAMP;
     MagFilter = POINT;
     MinFilter = POINT;
-    Mipfilter = POINT;
+    Mipfilter = NONE;
+};
+sampler depthSampler = sampler_state
+{
+    Texture = (param_depthMap);
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    MipFilter = NONE;
+};
+sampler randomSampler = sampler_state
+{
+    Texture = (param_randomMap);
+    AddressU = WRAP;
+    AddressV = WRAP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    MipFilter = NONE;
 };
 
-struct VertexInput
+
+
+// Define VS input
+struct VSIn
 {
-    float4 Position : POSITION0;
+    float3 Position : POSITION0;
     float2 TexCoord : TEXCOORD0;
 };
 
-struct PixelInput
+// Define VS output and therefor PS input
+struct VSOut
 {
     float4 Position : POSITION0;
     float2 TexCoord : TEXCOORD0;
+  
 };
 
-PixelInput SSAOVertexShader(VertexInput input)
+// Define PS output
+struct PSOut
 {
-    PixelInput pi = (PixelInput) 0;
+    float4 Color : COLOR0;
+};
 
-    pi.Position = input.Position;
-    pi.TexCoord = input.TexCoord;
 
-    return pi;
+
+// Reconstruct view-space position from the depth buffer
+float3 getPosition(in float2 vTexCoord, in float3 in_vFrustumCornerVS)
+{
+    float fPixelDepth = tex2D(depthSampler, vTexCoord).r;
+    return float3(fPixelDepth * in_vFrustumCornerVS);
+}
+
+float3 getPosition(float2 vTexCoord)
+{
+    // Get the depth value for this pixel
+    float z = tex2D(depthSampler, vTexCoord);
+    // Get x/w and y/w from the viewport position
+    float x = vTexCoord.x * 2 - 1;
+    float y = (1 - vTexCoord.y) * 2 - 1;
+    float4 vProjectedPos = float4(x, y, z, 1.0f);
+    // Transform by the inverse projection matrix
+    float4 vPositionVS = mul(vProjectedPos, g_matInvProjection);
+    // Divide by w to get the view-space position
+    return vPositionVS.xyz / vPositionVS.w;
+}
+
+// Calculate the occlusion term
+float doAmbientOcclusion(in float2 tcoord, in float3 p, in float3 cnorm)
+{
+    float3 diff = getPosition(tcoord ) - p;
+    float3 v = normalize(diff);
+    float d = length(diff) * param_scale;
+
+    return max(0.0, dot(cnorm, v) - param_bias) * (1.0 / (1.0 + d)) * param_intensity;
 }
 
 
 
-float4 getPosition(in float2 uv)
+/**************************************************
+Vertex shader.
+**************************************************/
+VSOut MainVS(VSIn input)
 {
-    float depth = DepthMap.SampleLevel(texSampler, uv, 0).r;
-	
+    VSOut output;
 
-	//compute screen-space position	
-    float4 position;
-    position.xy = uv.xy * 2.0f - 1.0f;
-    position.y = -position.y;
-    position.z = 1;
-    position.w = 1.0f;
-	
-    position = mul(position, InverseProjection);
-    position.xyz /= position.w;
-    position.z = depth;
-    return position;
+    output.Position = float4(input.Position, 1);
+    output.TexCoord = input.TexCoord.xy;
+    
+
+    return output;
 }
 
 
 
-float3 randomNormal(float2 tex)
+/**************************************************
+Pixel shader.
+**************************************************/
+PSOut MainPS(VSOut input)
 {
-    float noiseX = (frac(sin(dot(tex, float2(15.8989f, 76.132f) * 1.0f)) * 46336.23745f));
-    float noiseY = (frac(sin(dot(tex, float2(11.9899f, 62.223f) * 2.0f)) * 34748.34744f));
-    float noiseZ = (frac(sin(dot(tex, float2(13.3238f, 63.122f) * 3.0f)) * 59998.47362f));
-    return normalize(float3(noiseX, noiseY, noiseZ));
-}
+    PSOut output;
 
-float weightFunction(float3 vec3, float radius)
-{
-	// NVIDIA's weighting function
-    return 1.0 - pow(length(vec3) / radius, 2.0);
-}
-
-
-
-float4 SSAOPixelShader(PixelInput input) : COLOR0
-{
-
-    const float3 kernel[] =
+    const float2 vec[4] =
     {
-        float3(0.2024537f, 0.841204f, -0.9060141f),
-	float3(-0.2200423f, 0.6282339f, -0.8275437f),
-	float3(-0.7578573f, -0.5583301f, 0.2347527f),
-	float3(-0.4540417f, -0.252365f, 0.0694318f),
-	float3(0.3677659f, 0.1086345f, -0.4466777f),
-	float3(0.8775856f, 0.4617546f, -0.6427765f),
-	float3(-0.8433938f, 0.1451271f, 0.2202872f),
-	float3(-0.4037157f, -0.8263387f, 0.4698132f),
-	float3(0.7867433f, -0.141479f, -0.1567597f),
-	float3(0.4839356f, -0.8253108f, -0.1563844f),
-	float3(0.4401554f, -0.4228428f, -0.3300118f),
-	float3(0.0019193f, -0.8048455f, 0.0726584f),
-	float3(-0.0483353f, -0.2527294f, 0.5924745f),
-	float3(-0.4192392f, 0.2084218f, -0.3672943f),
-	float3(-0.6657394f, 0.6298575f, 0.6342437f),
-	float3(-0.0001783f, 0.2834622f, 0.8343929f),
+        float2(1, 0),
+		float2(-1, 0),
+		float2(0, 1),
+		float2(0, -1)
     };
 
-    float2 texCoord = float2(input.TexCoord);
+    float3 p = getPosition(input.TexCoord );
+    float3 n = normalize(tex2D(normalSampler, input.TexCoord).xyz * 2.0f - 1.0f);
+    float2 rand = normalize(tex2D(randomSampler, param_screenSize * input.TexCoord / param_randomSize).xy * 2.0f - 1.0f);
 
-//get normal data from the NormalMap
-    float4 normalData = NormalMap.Sample(texSampler, texCoord);
+    float ao = 0.0f;
+    float rad = param_sampleRadius/ p.z;
 
-
-//tranform normal back into [-1,1] range
-    float3 currentNormal = 2.0f * normalData.xyz - 1.0f;
-
-//transform
-    currentNormal = normalize(mul(currentNormal, View));
-
-    float linearDepth = DepthMap.Sample(texSampler, texCoord).r;
-
-
-    if (linearDepth < 0.00000001f)
+    int numIterations =4;
+    for (int j = 0; j < numIterations; ++j)
     {
-        return float4(1, 1, 1, 1);
+        float2 coord1 = reflect(vec[j], rand) * rad;
+        float2 coord2 = float2(coord1.x - coord1.y, coord1.x + coord1.y) * 0.707f;
+
+        ao += doAmbientOcclusion(input.TexCoord + coord1 * 0.25, p, n);
+        ao += doAmbientOcclusion(input.TexCoord + coord2 * 0.50, p, n);
+        ao += doAmbientOcclusion(input.TexCoord + coord1 * 0.75, p, n);
+        ao += doAmbientOcclusion(input.TexCoord + coord2 * 1.00, p, n);
     }
 
+    ao /= (float) numIterations ;
+    ao = saturate(ao * param_intensity);
 
-    float3 currentPos = getPosition(texCoord); //Position in VS
+    output.Color = 1 - ao;
 
-    float currentDistance = -currentPos.z;
-
-    float2 aspectRatio = float2(min(1.0f, Resolution.y / Resolution.x), min(1.0f, Resolution.x / Resolution.y));
-
-    float amount = 1.0f;
-
-    float3 noise = randomNormal(texCoord);
-
-//HBAO 2 dir
-    int sampleshalf = Samples * 0.5;
-    for (int i = 0; i < sampleshalf; i++)
-    {
-        float3 kernelVec = reflect(kernel[i], noise);
-        kernelVec.xy *= aspectRatio;
-
-        float radius = SampleRadius;
-
-        kernelVec.xy = (kernelVec.xy / currentDistance) * radius;
-
-        float biggestAnglePos = 0.0f;
-
-        float biggestAngleNeg = 0.0f;
-
-        float wAO = 0.0;
-
-        for (int b = 1; b <= 4; b++)
-        {
-            float3 sampleVec = getPosition(texCoord + kernelVec.xy * b / 4.0f) - currentPos;
-
-            float sampleAngle = dot(normalize(sampleVec), currentNormal);
-
-            sampleAngle *= step(0.3, sampleAngle);
-
-            if (sampleAngle > biggestAnglePos)
-            {
-                wAO += saturate(weightFunction(sampleVec, radius) * (sampleAngle - biggestAnglePos));
-
-                biggestAnglePos = sampleAngle;
-            }
-
-            sampleVec = getPosition(texCoord - kernelVec.xy * b / 4.0f) - currentPos;
-
-            sampleAngle = dot(normalize(sampleVec), currentNormal);
-
-            if (sampleAngle > biggestAngleNeg)
-            {
-                wAO += saturate(weightFunction(sampleVec, radius) * (sampleAngle - biggestAngleNeg));
-
-                biggestAngleNeg = sampleAngle;
-            }
-        }
-		
-
-        amount -= wAO / Samples * Strength;
-    }
-
-    return float4(amount, amount, amount, amount);
+    return output;
 }
 
-technique SSAO
-{
-    pass Pass0
-    {
-        VertexShader = compile vs_3_0 SSAOVertexShader();
-        PixelShader = compile ps_3_0 SSAOPixelShader();
-    }
-}*/
 
+
+technique Default
+{
+    pass SSAO
+    {
+        VertexShader = compile vs_3_0 MainVS();
+        PixelShader = compile ps_3_0 MainPS();
+    }
+}

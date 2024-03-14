@@ -83,6 +83,7 @@ namespace monogameMinecraft
         {
             Matrix world = (Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
             gBufferEffect.Parameters["World"].SetValue(world);
+            gBufferEffect.Parameters["TransposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(world*player.cam.viewMatrix)));
             device.SetVertexBuffer(c.VBOpq);
 
             device.Indices = c.IBOpq;
@@ -106,7 +107,7 @@ namespace monogameMinecraft
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
             basicShader.Parameters["LightColor"].SetValue(new Vector3(1, 1, 1));
             basicShader.Parameters["LightDir"].SetValue(new Vector3(20, 40, 30));
-            basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
+          //  basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
             basicShader.Parameters["viewPos"].SetValue(player.cam.position);
             // shadowmapShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
             //     RenderShadow(RenderingChunks, player,lightSpaceMat);
@@ -153,7 +154,7 @@ namespace monogameMinecraft
             basicShader.Parameters["fogRange"].SetValue(1024.0f);
             basicShader.Parameters["LightColor"].SetValue(new Vector3(1,1,1));
             basicShader.Parameters["LightDir"].SetValue(new Vector3(20, 40, 30));
-            basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
+        //    basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
             isBusy = true;
             BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
 

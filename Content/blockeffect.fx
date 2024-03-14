@@ -259,7 +259,7 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     
     if (receiveAO==true)
     {
-         ambient = (clamp(tex2D(AOSampler, input.ScreenSpaceUV.xy).r * 2,0.1,1))* 0.2 * LightColor;  
+         ambient = (clamp(tex2D(AOSampler, input.ScreenSpaceUV.xy).r ,0.1,1))* 0.2 * LightColor;  
     }
       
     if (receiveAO == false)
@@ -288,8 +288,9 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
      
     float3 specLightDir = normalize(LightPos - input.FragPos);
     float3 viewDir = normalize(viewPos - input.FragPos);
-    float3 reflectDir = reflect(-specLightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), 16);
+    float3 halfwayDir = normalize(lightDir + viewDir);
+     
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), 16);
     float3 specular = 0.8 * spec * LightColor;
     float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler,-0.003);
     float shadow1;

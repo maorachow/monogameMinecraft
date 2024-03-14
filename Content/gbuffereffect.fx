@@ -3,10 +3,11 @@
 matrix World;
 matrix View;
 matrix Projection;
-
+float3x3 TransposeInverseView;
+int renderTarget;
 struct VertexShaderInput
 {
-    float4 Position : POSITION0;
+    float4 Position : Position;
     float3 Normal : NORMAL0;
     float2 TexureCoordinate : TEXCOORD0;
     float3 Tangent : TANGENT0;
@@ -14,7 +15,7 @@ struct VertexShaderInput
 
 struct VertexShaderOutput
 {
-    float4 Position  : SV_Position;
+    float4 PositionScreenSpace  : SV_Position;
     float4 PositionV : TEXCOORD1;
     
     float4 PositionP : TEXCOORD4;
@@ -29,27 +30,6 @@ struct PixelShaderOutput
     float4 Normal : COLOR2;
 };
 
-float3x3 inverse_mat3(float3x3 m)
-{
-    float Determinant =
-       m[0][0] * (m[1][1] * m[2][2] - m[2][1] * m[1][2])
-     - m[1][0] * (m[0][1] * m[2][2] - m[2][1] * m[0][2])
-     + m[2][0] * (m[0][1] * m[1][2] - m[1][1] * m[0][2]);
-    
-    float3x3 Inverse;
-    Inverse[0][0] = +(m[1][1] * m[2][2] - m[2][1] * m[1][2]);
-    Inverse[1][0] = -(m[1][0] * m[2][2] - m[2][0] * m[1][2]);
-    Inverse[2][0] = +(m[1][0] * m[2][1] - m[2][0] * m[1][1]);
-    Inverse[0][1] = -(m[0][1] * m[2][2] - m[2][1] * m[0][2]);
-    Inverse[1][1] = +(m[0][0] * m[2][2] - m[2][0] * m[0][2]);
-    Inverse[2][1] = -(m[0][0] * m[2][1] - m[2][0] * m[0][1]);
-    Inverse[0][2] = +(m[0][1] * m[1][2] - m[1][1] * m[0][2]);
-    Inverse[1][2] = -(m[0][0] * m[1][2] - m[1][0] * m[0][2]);
-    Inverse[2][2] = +(m[0][0] * m[1][1] - m[1][0] * m[0][1]);
-    Inverse /= Determinant;
-    
-    return Inverse;
-} 
  
  
 VertexShaderOutput MainVS(in VertexShaderInput input)
@@ -58,27 +38,34 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 	
     float4 worldPosition = mul(input.Position, World);
     float4 viewPosition = mul(worldPosition, View);
-    output.Position  = mul(viewPosition, Projection);
+    output.PositionScreenSpace = mul(viewPosition, Projection);
     
     output.PositionV = viewPosition;
     output.PositionP = mul(viewPosition, Projection);
     float3x3 worldView =   World*View;
-    float3x3 normalMatrix = transpose(inverse_mat3(worldView));
-     output.Tangent = mul(input.Tangent , normalMatrix);
     
-    output.Normal = mul(input.Normal, normalMatrix);
+    output.Tangent = mul(input.Tangent, TransposeInverseView);
+    
+    output.Normal = mul(input.Normal, TransposeInverseView);
      
 	return output;
 }
-
+ 
+float LinearizeDepth(float depth)
+{
+    float NEAR = 0.1;
+     float FAR = 50.0f;
+    float z = depth * 2.0 - 1.0; 
+    return (2.0 * NEAR * FAR) / (FAR + NEAR - z * (FAR - NEAR));
+}
 PixelShaderOutput MainPS(VertexShaderOutput input) 
 {
     PixelShaderOutput psOut = (PixelShaderOutput) 0;
-   
-    psOut.ViewPosition.xyzw = input.PositionV.xyzw ;
-   
-   
-    psOut.ProjectionDepth.rgb = (input.PositionP.z / input.PositionP.w)*0.5+0.5;
+    
+        psOut.ViewPosition.xyzw = input.PositionV.xyzw;
+    float3 position = input.PositionP.xyz / input.PositionP.w;
+    
+    psOut.ProjectionDepth.rgb = position.z;
     psOut.ProjectionDepth.a = 1;
     psOut.Normal = float4(normalize(input.Normal) * 0.5 + 0.5, 1);
     return psOut;
