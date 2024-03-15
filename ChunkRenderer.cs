@@ -97,6 +97,8 @@ namespace monogameMinecraft
         }
         public void RenderAllChunksOpq(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
+
+            isBusy = true; 
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
             basicShader.Parameters["TextureDepth"].SetValue(atlasDepth);
@@ -113,7 +115,7 @@ namespace monogameMinecraft
             //     RenderShadow(RenderingChunks, player,lightSpaceMat);
             basicShader.Parameters["TextureAO"].SetValue(SSAORenderer.ssaoTarget);
             basicShader.Parameters["receiveAO"].SetValue(true);
-            isBusy = true; 
+            
             BoundingFrustum frustum=new BoundingFrustum(player.cam.viewMatrix*player.cam.projectionMatrix);
             
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
@@ -126,8 +128,9 @@ namespace monogameMinecraft
                 {
                     continue;
                 }
-
-                if(c.isReadyToRender==true && c.disposed == false)
+                lock(c.renderLock)
+                {
+             if(c.isReadyToRender==true && c.disposed == false)
                 {
                     
                     if (frustum.Intersects(c.chunkBounds))
@@ -138,6 +141,8 @@ namespace monogameMinecraft
                   
                     
                 }
+                }
+               
             }
              
             
@@ -147,6 +152,8 @@ namespace monogameMinecraft
 
         public void RenderAllChunksTransparent(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {
+
+            isBusy = true;
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["View"].SetValue(player.cam.viewMatrix);
             basicShader.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
@@ -155,7 +162,7 @@ namespace monogameMinecraft
             basicShader.Parameters["LightColor"].SetValue(new Vector3(1,1,1));
             basicShader.Parameters["LightDir"].SetValue(new Vector3(20, 40, 30));
         //    basicShader.Parameters["LightPos"].SetValue(player.playerPos + new Vector3(10, 50, 30));
-            isBusy = true;
+           
             BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
 
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
@@ -170,7 +177,8 @@ namespace monogameMinecraft
                 {
                     continue;
                 }
-                if (c.isReadyToRender == true && c.disposed == false)
+                lock (c.renderLock)
+                {if (c.isReadyToRender == true && c.disposed == false)
                 {
                     if (frustum.Intersects(c.chunkBounds))
                     {
@@ -190,6 +198,8 @@ namespace monogameMinecraft
 
                     }
                 }
+                }
+                    
 
             }
 

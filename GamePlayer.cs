@@ -208,6 +208,7 @@ namespace monogameMinecraft
         }
         public void Move(Vector3 moveVec,bool isClipable)
           {
+           
             //  this.ySize *= 0.4;
             float dx = moveVec.X;
             float dy = moveVec.Y;

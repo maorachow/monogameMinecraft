@@ -173,38 +173,37 @@ namespace monogameMinecraft
                 {
                     return;
                 }
-                Thread.Sleep(50);
+             //   Thread.Sleep(50);
               if (ChunkRenderer.isBusy == true)
                 {
                     continue;
                 }
 
-                foreach (var c in ChunkManager.chunks)
+                foreach (Chunk c in ChunkManager.chunks.Values)
                 {
-                    lock (c.Value.taskLock)
-                    {
-                    if ((MathF.Abs(c.Value.chunkPos.x - player.playerPos.X )> (GameOptions.renderDistance + Chunk.chunkWidth )||MathF.Abs( c.Value.chunkPos.y - player.playerPos.Z) > (GameOptions.renderDistance + Chunk.chunkWidth))
-                        &&(c.Value.isReadyToRender==true&&c.Value.isTaskCompleted==true)
-                        && (c.Value.leftChunk==null||(c.Value.leftChunk!=null&&c.Value.leftChunk.isTaskCompleted == true))
+                   c.semaphore.Wait();
+                    if ((MathF.Abs(c.chunkPos.x - player.playerPos.X )> (GameOptions.renderDistance + Chunk.chunkWidth )||MathF.Abs( c.chunkPos.y - player.playerPos.Z) > (GameOptions.renderDistance + Chunk.chunkWidth))
+                        &&(c.isReadyToRender==true&&c.isTaskCompleted==true)&&c.usedByOthersCount<=0
+                    /*    && (c.Value.leftChunk==null||(c.Value.leftChunk!=null&&c.Value.leftChunk.isTaskCompleted == true))
                         && (c.Value.rightChunk == null || (c.Value.rightChunk != null && c.Value.rightChunk.isTaskCompleted == true))
                         && (c.Value.frontChunk == null || (c.Value.frontChunk != null && c.Value.frontChunk.isTaskCompleted == true))
-                        && (c.Value.backChunk == null || (c.Value.backChunk != null && c.Value.backChunk.isTaskCompleted == true))
+                        && (c.Value.backChunk == null || (c.Value.backChunk != null && c.Value.backChunk.isTaskCompleted == true))*/
                         )
                     {
                         // Chunk c2;
-                        
-                            c.Value.isReadyToRender = false;
-                            c.Value.SaveSingleChunk();
-                            c.Value.Dispose();
-                       
-                            ChunkManager.chunks.TryRemove(c);
-                        
+                            
+                            c.isReadyToRender = false;
+                            c.SaveSingleChunk();
+                            c.Dispose();
+                            
+                            ChunkManager.chunks.TryRemove(new KeyValuePair<Vector2Int,Chunk>(c.chunkPos,c));
+                      
                            
                  
                     }
-                    }
-                    
-                
+
+                    c.semaphore.Release();
+
                 }
                
             }

@@ -87,7 +87,7 @@ namespace monogameMinecraft
             this.renderTargetPositionDepth = new RenderTarget2D(this.graphicsDevice, width, height, false,SurfaceFormat.Vector4, DepthFormat.Depth24);
             this.renderTargetProjectionDepth = new RenderTarget2D(this.graphicsDevice, width, height, false, SurfaceFormat.Single, DepthFormat.Depth24);
             this.renderTargetNormal = new RenderTarget2D(this.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
-            this.ssaoTarget = new RenderTarget2D(this.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
+            this.ssaoTarget = new RenderTarget2D(this.graphicsDevice, 800, 600, false, SurfaceFormat.Color, DepthFormat.Depth24);
             this.binding = new RenderTargetBinding[3];
             this.binding[0] = new RenderTargetBinding(this.renderTargetPositionDepth);
             this.binding[1]= new RenderTargetBinding(this.renderTargetProjectionDepth);
@@ -157,11 +157,13 @@ namespace monogameMinecraft
             chunkRenderer.RenderAllChunksGBuffer(ChunkManager.chunks, player, this.gBufferEffect);
             graphicsDevice.SetRenderTargets(null);
             graphicsDevice.Clear(Color.CornflowerBlue);
-            //     ssaoEffect.Parameters["View"].SetValue(player.cam.viewMatrix);
-     /*       ssaoEffect.Parameters["ProjectionDepthTex"].SetValue(this.renderTargetProjectionDepth);
-            ssaoEffect.Parameters["samples"].SetValue(ssaoKernel.ToArray());
+    /*        //     ssaoEffect.Parameters["View"].SetValue(player.cam.viewMatrix);
+            ssaoEffect.Parameters["ProjectionDepthTex"].SetValue(this.renderTargetProjectionDepth);
+       //     ssaoEffect.Parameters["samples"].SetValue(ssaoKernel.ToArray());
             ssaoEffect.Parameters["invProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix));
-            ssaoEffect.Parameters["projection"].SetValue(player.cam.projectionMatrix);*/
+       //     ssaoEffect.Parameters["projection"].SetValue(player.cam.projectionMatrix);
+           // ssaoEffect.Parameters["NoiseTex"].SetValue(ssaoNoiseTexture);
+            ssaoEffect.Parameters["NormalTex"].SetValue(this.renderTargetNormal);*/
                 ssaoEffect.Parameters["param_depthMap"].SetValue(this.renderTargetProjectionDepth);
                     ssaoEffect.Parameters["param_normalMap"].SetValue(this.renderTargetNormal);
                          ssaoEffect.Parameters["param_randomMap"].SetValue(this.ssaoNoiseTexture);
@@ -170,7 +172,8 @@ namespace monogameMinecraft
                 ssaoEffect.Parameters["param_scale"].SetValue(1f);
                 ssaoEffect.Parameters["param_sampleRadius"].SetValue(0.2f);
                 ssaoEffect.Parameters["param_randomSize"].SetValue(0.001f);
-                ssaoEffect.Parameters["g_matInvProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix ));
+            ssaoEffect.Parameters["param_screenSize"].SetValue(100f);
+            ssaoEffect.Parameters["g_matInvProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix ));
 
             RenderQuad(ssaoTarget, this.ssaoEffect);
         }

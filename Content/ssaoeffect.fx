@@ -1,6 +1,6 @@
-﻿ 
+﻿ /*
 
-/*
+
 #if OPENGL
 #define SV_POSITION POSITION
 #define VS_SHADERMODEL vs_3_0
@@ -90,13 +90,11 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 
     return output;
 }
-
- 
  
 float3 PositionFromDepth(float2 vTexCoord)
 {
     // Get the depth value for this pixel
-    float z = tex2D(gProjectionDepth, vTexCoord);
+    float z = tex2D(gProjectionDepth, vTexCoord).r;
     // Get x/w and y/w from the viewport position
     float x = vTexCoord.x * 2 - 1;
     float y = (1 - vTexCoord.y) * 2 - 1;
@@ -104,74 +102,51 @@ float3 PositionFromDepth(float2 vTexCoord)
     // Transform by the inverse projection matrix
     float4 vPositionVS = mul(vProjectedPos, invProjection);
     // Divide by w to get the view-space position
-    return vPositionVS.xyz / vPositionVS.w;
+    return vPositionVS.xyz/vPositionVS.w;
 }
  
+float doAmbientOcclusion1(in float2 tcoord, in float3 p, in float3 cnorm)
+{
+    float3 diff = PositionFromDepth(tcoord) - p;
+    float3 v = normalize(diff);
+    float d = length(diff) * 1;
+
+    return max(0.0, dot(cnorm, v) - 0) * (1.0 / (1.0 + d)) * 1;
+}
+
+
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
- 
-    float3 fragPos = PositionFromDepth(input.TexCoords*100);
+    float3 p = PositionFromDepth(input.TexCoords);
+    float rad = 0.3 / p.z;
+   
+    const float2 vec[4] =
+    {
+        float2(1, 0),
+		float2(-1, 0),
+		float2(0, 1),
+		float2(0, -1)
+    };
+    float3 normal = tex2D(gNormal, input.TexCoords) * 2 - 1;
+     
    // float3 fragPos = mul(projFragPos, invProjection);
     //fragPos = VSPositionFromDepth(input.TexCoords);
     float occlusion = 0.0;
-    float radius =0.1;
-  
-    float depth = tex2D(gProjectionDepth, input.TexCoords.xy).r;
+ 
     for (int i = 0; i < 64;i++)
     {
-   
-        float3 sample = samples[i];
-        sample = fragPos + sample * radius;
+        float2 sample = samples[i].xy;
         
-       
-        float4 offset = float4(sample, 1.0);
-        offset = mul(projection , offset); 
-        offset.xyz  /= offset.w; 
-        offset.xyz  = offset.xyz  * 0.5 + 0.5; 
-     
-       
-        float sampleDepth = tex2D(gProjectionDepth, offset.xy).r ;
- 
-        occlusion += (sampleDepth > depth ? 0.0 : 1.0);
+        occlusion += doAmbientOcclusion1(input.TexCoords + vec[i%4]*rad+samples[i]*0.1, p, normal);
          
     }
     
-    occlusion = (occlusion/64);
+    
+    occlusion =  (occlusion /64);
     return float4(occlusion, occlusion, occlusion, 1);
 
-}*/
-
- 
-/*float4 MainPS(VertexShaderOutput input) : COLOR
-{
- 
-    float depth = tex2D(gProjectionDepth, input.TexCoords).r ;
-    float3 fragPos = PositionFromDepth(input.TexCoords);
-        
-    float occlusion =0;
-     
-    for (int i = 0; i < 64; i++)
-    {
-        float2 sp = samples[i].xy *0.18 /depth;
-        float occ_depth = tex2D(gProjectionDepth, input.TexCoords + sp).r;
- 
-
-        if (depth >  occ_depth)
-        {
-            occlusion += 0;
-        }
-        else
-        {
-            
-                occlusion += 1; 
-            
-           
-        }
-     }
-    occlusion /= 64;
-    return float4(occlusion, occlusion, occlusion, 1.0);
-  
 }
+
  
  */
 
