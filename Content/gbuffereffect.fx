@@ -28,6 +28,7 @@ struct PixelShaderOutput
     float4 ViewPosition : COLOR0;
     float4 ProjectionDepth : COLOR1;
     float4 Normal : COLOR2;
+    float4 PureBlack : COLOR3;
 };
 
  
@@ -68,6 +69,7 @@ PixelShaderOutput MainPS(VertexShaderOutput input)
     psOut.ProjectionDepth.rgb = position.z;
     psOut.ProjectionDepth.a = 1;
     psOut.Normal = float4(normalize(input.Normal) * 0.5 + 0.5, 1);
+    psOut.PureBlack = float4(1,1, 1, 1);
     return psOut;
 
 }

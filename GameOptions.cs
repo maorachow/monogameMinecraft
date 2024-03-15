@@ -19,6 +19,7 @@ namespace monogameMinecraft
         public static bool renderShadow = false;
         public static bool renderFarShadow = false;
         public static bool renderSSAO=false;
+        public static bool renderLightShaft = false;
         public static void ReadOptionsJson()
         {
             if (!Directory.Exists(path + "unityMinecraftServerData"))
@@ -43,6 +44,7 @@ namespace monogameMinecraft
             renderShadow = dataOptions.renderShadow;
             renderFarShadow = dataOptions.renderFarShadow;
                     renderSSAO= dataOptions.renderSSAO;
+                    renderLightShaft= dataOptions.renderLightShaft;
                 }catch(Exception ex)
                 {
                     Debug.WriteLine(ex.ToString());
@@ -68,7 +70,7 @@ namespace monogameMinecraft
             
 
           
-            GameOptionsData data=new GameOptionsData(GameOptions.renderDistance, GameOptions.renderShadow, GameOptions.renderFarShadow,GameOptions.renderSSAO);
+            GameOptionsData data=new GameOptionsData(GameOptions.renderDistance, GameOptions.renderShadow, GameOptions.renderFarShadow,GameOptions.renderSSAO,GameOptions.renderLightShaft);
             string dataSerialized = JsonSerializer.Serialize<GameOptionsData>(data);
             File.WriteAllText(path + "unityMinecraftServerData/options.json", dataSerialized);
             
@@ -103,6 +105,13 @@ namespace monogameMinecraft
             renderSSAO = !renderSSAO;
             obj.text = "Render SSAO : " + renderSSAO.ToString();
         }
+        public static void ChangeRenderLightShaft(UIButton obj)
+        {
+
+            obj.text = "Render Light Shaft : " + renderLightShaft.ToString();
+            renderLightShaft = !renderLightShaft;
+            obj.text = "Render Light Shaft : " + renderLightShaft.ToString();
+        }
     }
 
     public class GameOptionsData
@@ -115,12 +124,15 @@ namespace monogameMinecraft
         public bool renderFarShadow;
         [JsonInclude]
         public bool renderSSAO;
-        public GameOptionsData(int renderDistance,bool renderShadow,bool renderFarShadow,bool renderSSAO)
+        [JsonInclude]
+        public bool renderLightShaft;
+        public GameOptionsData(int renderDistance,bool renderShadow,bool renderFarShadow,bool renderSSAO,bool renderLightShaft)
         {
             this.renderDistance = renderDistance;
             this.renderShadow = renderShadow;
             this.renderFarShadow = renderFarShadow;
             this.renderSSAO= renderSSAO;
+            this.renderLightShaft = renderLightShaft;
         }
     }
 }
