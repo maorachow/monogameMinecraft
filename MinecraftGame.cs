@@ -34,6 +34,7 @@ namespace monogameMinecraft
         public Effect gBufferEffect;
         public Effect skyboxEffect;
         public Effect lightShaftEffect;
+        public Effect ssrEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
@@ -47,9 +48,10 @@ namespace monogameMinecraft
         public SSAORenderer ssaoRenderer;
         public SkyboxRenderer skyboxRenderer;
         public GBufferRenderer gBufferRenderer;
+        public SSRRenderer ssrRenderer;
         public TextureCube skyboxTex;
         public VolumetricLightRenderer volumetricLightRenderer;
-        public bool renderDebug=false;
+        public bool renderDebug=true;
         public MinecraftGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -88,9 +90,9 @@ namespace monogameMinecraft
 
                     int width = GraphicsDevice.PresentationParameters.BackBufferWidth;
                     int height = GraphicsDevice.PresentationParameters.BackBufferHeight;
-                    gBufferRenderer.renderTargetPositionDepth = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+                    gBufferRenderer.renderTargetAlbedo = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
                     gBufferRenderer.renderTargetProjectionDepth = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Single, DepthFormat.Depth24);
-                    gBufferRenderer.renderTargetNormal = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
+                    gBufferRenderer.renderTargetNormalWS = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
                     ssaoRenderer.ssaoTarget = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
                     volumetricLightRenderer.blendVolumetricMap = new RenderTarget2D(GraphicsDevice, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
                     volumetricLightRenderer.renderTargetLum = new RenderTarget2D(GraphicsDevice, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
@@ -132,12 +134,13 @@ namespace monogameMinecraft
             ssaoEffect = Content.Load<Effect>("ssaoeffect");
             lightShaftEffect = Content.Load<Effect>("lightshafteffect");
             skyboxEffect = Content.Load<Effect>("skyboxeffect");
+            ssrEffect = Content.Load<Effect>("ssreffect");
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null);
            
             chunkRenderer.SetTexture(terrainTex,terrainNormal, terrainDepth);
             gBufferRenderer=new GBufferRenderer(this.GraphicsDevice, gBufferEffect,gamePlayer,chunkRenderer);
             ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferRenderer, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
-             
+            ssrRenderer = new SSRRenderer(GraphicsDevice, gamePlayer, gBufferRenderer, ssrEffect);
             entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer);
             chunkRenderer.shadowRenderer = shadowRenderer;
@@ -146,6 +149,7 @@ namespace monogameMinecraft
             shadowRenderer.zombieModel = Content.Load<Model>("zombiemodelref");
             skyboxRenderer = new SkyboxRenderer(GraphicsDevice, skyboxEffect, null, gamePlayer,Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skyboxup"), Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skybox"), Content.Load<Texture2D>("skyboxdown"), Content.Load<Texture2D>("skybox"));
             volumetricLightRenderer = new VolumetricLightRenderer(GraphicsDevice, gBufferRenderer, _spriteBatch,Content.Load<Effect>("volumetricmaskblend"), lightShaftEffect,gamePlayer);
+            chunkRenderer.SSRRenderer = ssrRenderer;
             GamePlayer.ReadPlayerData(gamePlayer,this);
             EntityBeh.InitEntityList();
 
@@ -347,6 +351,7 @@ namespace monogameMinecraft
             gBufferRenderer.Draw();
              ssaoRenderer.Draw();
             volumetricLightRenderer.Draw();
+            ssrRenderer.Draw();
             skyboxRenderer.Draw();
            
             chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
@@ -374,7 +379,7 @@ namespace monogameMinecraft
                     RenderWorld();
                     _spriteBatch.Begin(blendState:BlendState.Additive);
                     _spriteBatch.Draw(volumetricLightRenderer.lightShaftTarget, new Rectangle(0, 0, GraphicsDevice.PresentationParameters.BackBufferWidth , GraphicsDevice.PresentationParameters.BackBufferHeight), Color.White);
-
+                 //   _spriteBatch.Draw(ssrRenderer.renderTargetSSR, new Rectangle(0, 0, GraphicsDevice.PresentationParameters.BackBufferWidth, GraphicsDevice.PresentationParameters.BackBufferHeight), Color.White);
                     _spriteBatch.End();
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
@@ -384,14 +389,23 @@ namespace monogameMinecraft
                     }
                    _spriteBatch.End();
                      _spriteBatch.Begin();
-                    if (renderDebug) {   _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
-                    _spriteBatch.Draw(shadowRenderer.shadowMapTargetFar, new Rectangle(200, 200, 200, 200), Color.White);
-                   _spriteBatch.Draw(gBufferRenderer.renderTargetPositionDepth, new Rectangle(200, 400, 200, 200), Color.White);
-                       _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(400, 0, 200, 200), Color.White);
-                    _spriteBatch.Draw(gBufferRenderer.renderTargetProjectionDepth, new Rectangle(400, 200, 200, 200), Color.White);
-                    _spriteBatch.Draw(gBufferRenderer.renderTargetNormal, new Rectangle(600, 200, 200, 200), Color.White);
-                    _spriteBatch.Draw(volumetricLightRenderer.blendVolumetricMap, new Rectangle(800, 200, 200, 200), Color.White);
-                    _spriteBatch.Draw(volumetricLightRenderer.lightShaftTarget, new Rectangle(800, 400, 200, 200), Color.White); }     
+                    if (renderDebug)
+                    {
+                        _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
+                        _spriteBatch.Draw(shadowRenderer.shadowMapTargetFar, new Rectangle(200, 200, 200, 200), Color.White);
+
+                        _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(400, 0, 200, 200), Color.White);
+                        _spriteBatch.Draw(gBufferRenderer.renderTargetProjectionDepth, new Rectangle(400, 200, 200, 200), Color.White);
+                        _spriteBatch.Draw(gBufferRenderer.renderTargetNormalWS, new Rectangle(600, 200, 200, 200), Color.White);
+                        _spriteBatch.Draw(gBufferRenderer.renderTargetAlbedo, new Rectangle(200, 600, 200, 200), Color.White);
+                        _spriteBatch.Draw(gBufferRenderer.renderTargetRoughness, new Rectangle(400, 800, 200, 200), Color.White);
+                        // _spriteBatch.Draw(volumetricLightRenderer.blendVolumetricMap, new Rectangle(800, 200, 200, 200), Color.White);
+                        // _spriteBatch.Draw(volumetricLightRenderer.lightShaftTarget, new Rectangle(800, 400, 200, 200), Color.White);
+
+                        _spriteBatch.Draw(ssrRenderer.renderTargetSSR, new Rectangle(200, 800, 200, 200), Color.White);
+                    }
+
+
                     _spriteBatch.End();
                     break;
                 case GameStatus.Menu:

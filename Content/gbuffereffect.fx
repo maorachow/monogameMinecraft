@@ -5,6 +5,16 @@ matrix View;
 matrix Projection;
 float3x3 TransposeInverseView;
 int renderTarget;
+float roughness;
+sampler textureSampler = sampler_state
+{
+    Texture = (blockTex);
+    AddressU = CLAMP;
+    AddressV = CLAMP;
+    MagFilter = POINT;
+    MinFilter = POINT;
+    Mipfilter = NONE;
+};
 struct VertexShaderInput
 {
     float4 Position : Position;
@@ -21,14 +31,19 @@ struct VertexShaderOutput
     float4 PositionP : TEXCOORD4;
     float3 Normal : TEXCOORD2;
     float3 Tangent : TEXCOORD3;
+    float3 NormalWS : TEXCOORD5;
+    float2 TexCoords : TEXCOORD11;
 };
 struct PixelShaderOutput
 {
     
-    float4 ViewPosition : COLOR0;
-    float4 ProjectionDepth : COLOR1;
-    float4 Normal : COLOR2;
-    float4 PureBlack : COLOR3;
+     
+    float4 ProjectionDepth : COLOR0;
+  //  float4 Normal : COLOR2;
+    
+    float4 NormalWS : COLOR1;
+    float4 Albedo : COLOR2;
+    float4 Roughness : COLOR3;
 };
 
  
@@ -48,7 +63,8 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.Tangent = mul(input.Tangent, TransposeInverseView);
     
     output.Normal = mul(input.Normal, TransposeInverseView);
-     
+    output.NormalWS = input.Normal;
+    output.TexCoords = input.TexureCoordinate;
 	return output;
 }
  
@@ -63,13 +79,17 @@ PixelShaderOutput MainPS(VertexShaderOutput input)
 {
     PixelShaderOutput psOut = (PixelShaderOutput) 0;
     
-        psOut.ViewPosition.xyzw = input.PositionV.xyzw;
+      
     float3 position = input.PositionP.xyz / input.PositionP.w;
     
     psOut.ProjectionDepth.rgb = position.z;
     psOut.ProjectionDepth.a = 1;
-    psOut.Normal = float4(normalize(input.Normal) * 0.5 + 0.5, 1);
-    psOut.PureBlack = float4(1,1, 1, 1);
+    psOut.NormalWS = float4(normalize(input.Normal) * 0.5 + 0.5, 1);
+    psOut.Albedo = tex2D(textureSampler,input.TexCoords);
+    psOut.NormalWS = float4(normalize(input.NormalWS) * 0.5 + 0.5, 1);
+    psOut.Roughness.rgb = roughness;
+    psOut.Roughness.a = 1;
+    
     return psOut;
 
 }

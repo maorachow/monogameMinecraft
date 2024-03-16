@@ -83,7 +83,7 @@ namespace monogameMinecraft
             device.SetRenderTarget(renderTargetLum);
             
             device.Clear(Color.LightYellow);
-            blendEffect.Parameters["maskTex"].SetValue(gBufferRenderer.renderTargetBlack);
+            blendEffect.Parameters["maskTex"].SetValue(gBufferRenderer.renderTargetAlbedo);
           //  blendEffect.Parameters["backgroundTex"].SetValue(renderTargetLum);
             blendEffect.Parameters["screenSpaceLightPos"].SetValue(screenSpaceLightPos);
             blendEffect.Parameters["flareWeight"].SetValue(2f);

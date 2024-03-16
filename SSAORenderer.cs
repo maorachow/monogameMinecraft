@@ -159,7 +159,8 @@ namespace monogameMinecraft
            // ssaoEffect.Parameters["NoiseTex"].SetValue(ssaoNoiseTexture);
             ssaoEffect.Parameters["NormalTex"].SetValue(this.renderTargetNormal);*/
                 ssaoEffect.Parameters["param_depthMap"].SetValue(gBufferRenderer.renderTargetProjectionDepth);
-                    ssaoEffect.Parameters["param_normalMap"].SetValue(gBufferRenderer.renderTargetNormal);
+                    ssaoEffect.Parameters["param_normalMap"].SetValue(gBufferRenderer.renderTargetNormalWS);
+            ssaoEffect.Parameters["transposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(player.cam.viewMatrix)));
                          ssaoEffect.Parameters["param_randomMap"].SetValue(this.ssaoNoiseTexture);
                // ssaoEffect.Parameters["ViewProjection"].SetValue(player.cam.projectionMatrix*player.cam.viewMatrix);
                    ssaoEffect.Parameters["param_intensity"].SetValue(0.7f);

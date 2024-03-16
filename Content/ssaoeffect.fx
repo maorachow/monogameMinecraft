@@ -160,6 +160,7 @@ float4x4 g_matInvProjection;
  float param_scale=1;
 float param_bias;
 float2 param_screenSize;
+float3x3 transposeInverseView;
 
 texture param_normalMap;
 texture param_depthMap;
@@ -286,6 +287,7 @@ PSOut MainPS(VSOut input)
 
     float3 p = getPosition(input.TexCoord );
     float3 n = normalize(tex2D(normalSampler, input.TexCoord).xyz * 2.0f - 1.0f);
+    n = mul(n, transposeInverseView);
     float2 rand = normalize(tex2D(randomSampler, param_screenSize * input.TexCoord / param_randomSize).xy * 2.0f - 1.0f);
 
     float ao = 0.0f;

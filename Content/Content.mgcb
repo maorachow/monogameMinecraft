@@ -309,6 +309,12 @@
 /processorParam:DebugMode=Auto
 /build:ssaoeffect.fx
 
+#begin ssreffect.fx
+/importer:EffectImporter
+/processor:EffectProcessor
+/processorParam:DebugMode=Auto
+/build:ssreffect.fx
+
 #begin terrain.png
 /importer:TextureImporter
 /processor:TextureProcessor

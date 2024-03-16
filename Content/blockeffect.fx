@@ -14,6 +14,7 @@ float3 LightDir = float3(20, 40, 30);
 float3 LightColor = float3(1, 1, 1);
 bool renderShadow;
 bool receiveAO;
+bool receiveReflection;
 sampler2D textureSampler = sampler_state
 {
     Texture = <Texture>;
@@ -54,6 +55,16 @@ sampler2D AOSampler = sampler_state
     MinFilter = Point;
     AddressU = Border;
     AddressV = Border;
+};
+sampler2D reflectionSampler = sampler_state
+{
+    Texture = <TextureReflection>;
+ 
+    MipFilter = Linear;
+    MagFilter = Point;
+    MinFilter = Point;
+    AddressU = Wrap;
+    AddressV = Wrap;
 };
 sampler ShadowMapSampler = sampler_state
 {
@@ -272,8 +283,24 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     
     
     float3 objectColor = tex2D(textureSampler, texCoords).rgb;
-   
-   
+    if (receiveReflection == true)
+    { 
+        if (length(viewPos - input.FragPos) < 50)
+        {
+           objectColor *= tex2D(reflectionSampler, input.ScreenSpaceUV.xy).rgb;
+            if (length(objectColor.xyz)<= 0.001)
+            {
+            objectColor = tex2D(textureSampler, texCoords).rgb;
+            }  
+        }
+       
+
+    }
+    if (receiveReflection == false)
+    {
+      
+
+    }
     float3 texNormal = tex2D(normalSampler, texCoords).rgb;
     if (texNormal.r <= 0.001 && texNormal.g <= 0.001 && texNormal.b <= 0.001)
     {
