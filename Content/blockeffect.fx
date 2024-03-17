@@ -14,7 +14,15 @@ float3 LightDir = float3(20, 40, 30);
 float3 LightColor = float3(1, 1, 1);
 bool renderShadow;
 bool receiveAO;
+float shadowBias;
 bool receiveReflection;
+
+bool receiveShadow;
+float3 LightPositions[4];
+float3 LightPosition1;
+float3 LightPosition2;
+float3 LightPosition3;
+float3 LightPosition4;
 sampler2D textureSampler = sampler_state
 {
     Texture = <Texture>;
@@ -61,8 +69,8 @@ sampler2D reflectionSampler = sampler_state
     Texture = <TextureReflection>;
  
     MipFilter = Linear;
-    MagFilter = Point;
-    MinFilter = Point;
+    MagFilter = Linear;
+    MinFilter = Linear;
     AddressU = Wrap;
     AddressV = Wrap;
 };
@@ -124,7 +132,7 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
     //if(Alpha<1){output.Position.y=0;}
    
     output.Normal=input.Normal;
-    float4 screenPosition = output.Position;
+    float4 screenPosition = mul(viewPosition, Projection);
     screenPosition.xyz /= screenPosition.w;
     screenPosition.xy = screenPosition.xy*0.5 + 0.5;
     screenPosition.y = 1 - screenPosition.y;
@@ -160,7 +168,7 @@ float ShadowCalculation(float4 fragPosLightSpace,sampler2D sp,float bias)
    
     float currentDepth = projCoords.z;
     float shadow;
-    float shadowBias = bias;
+     
     float2 texelSize = 1.0 / 2048.0;
     for (int x = -1; x <= 1; ++x)
     {
@@ -168,7 +176,7 @@ float ShadowCalculation(float4 fragPosLightSpace,sampler2D sp,float bias)
         {
             float pcfDepth = tex2D(sp, projCoords.xy + float2(x, y) * texelSize).r;
          //   shadow += currentDepth - shadowBias > pcfDepth ? 1.0 : 0.0;
-            if (pcfDepth - shadowBias > currentDepth)
+            if (pcfDepth - shadowBias+bias > currentDepth)
             {
                 shadow+= 0;
             }
@@ -221,7 +229,7 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir)
     float2 deltaTexCoords = P / numLayers;
     float2 currentTexCoords = texCoords;
     float currentDepthMapValue = tex2D(depthSampler, currentTexCoords).r;
-    int i = 10;
+    int i = 5;
     [unroll]
     while (currentLayerDepth < currentDepthMapValue&&i>0)
     {
@@ -235,6 +243,31 @@ float2 ParallaxMapping(float2 texCoords, float3 viewDir)
     }
 
     return currentTexCoords;
+}
+float3 CaculatePointLight(float3 lightPos,float3 fragPos,float3 normal,float3 viewDir)
+{
+    if (abs(lightPos.x) < 0.001 && abs(lightPos.x) < 0.001 && abs(lightPos.x) < 0.001)
+    {
+        return float3(0, 0, 0);
+    }
+    float3 lightDir = normalize(lightPos - fragPos);
+    // 漫反射着色
+    float diff = max(dot(normal, lightDir), 0.0);
+    // 镜面光着色
+    float3 reflectDir = reflect(-lightDir, normal);
+    float3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), 128);
+    // 衰减
+    float distance = length(lightPos - fragPos);
+    float attenuation = 1.0 / (10 * (distance * distance));
+    // 合并结果
+    float3 ambient = 0;
+    float3 diffuse = diff * float3(255 / 255, 255 / 255, 224.0 / 255.0);
+    float3 specular = spec;
+    ambient *= attenuation;
+    diffuse *= attenuation;
+    specular *= attenuation;
+   return (ambient + diffuse + specular);
 }
 PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
 {
@@ -266,52 +299,43 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     }*/
    
   
-    float3 ambient;
+    float3 ambient = 0.2 * LightColor;
     
     if (receiveAO==true)
     {
          ambient = (clamp(tex2D(AOSampler, input.ScreenSpaceUV.xy).r ,0.1,1))* 0.2 * LightColor;  
     }
       
-    if (receiveAO == false)
-    {
-       ambient =  0.2 * LightColor;  
-    }
      
-       
-    
-    
-    
+
     float3 objectColor = tex2D(textureSampler, texCoords).rgb;
     if (receiveReflection == true)
     { 
-        if (length(viewPos - input.FragPos) < 50)
+        if (length(viewPos - input.FragPos) < 70)
         {
-           objectColor *= tex2D(reflectionSampler, input.ScreenSpaceUV.xy).rgb;
-            if (length(objectColor.xyz)<= 0.001)
+            if (tex2D(reflectionSampler, input.ScreenSpaceUV.xy).a > 0.001)
             {
-            objectColor = tex2D(textureSampler, texCoords).rgb;
-            }  
+              objectColor *=tex2D(reflectionSampler, input.ScreenSpaceUV.xy).rgb;  
+            }
+           
+           
         }
        
 
     }
-    if (receiveReflection == false)
-    {
-      
-
-    }
+  
     float3 texNormal = tex2D(normalSampler, texCoords).rgb;
-    if (texNormal.r <= 0.001 && texNormal.g <= 0.001 && texNormal.b <= 0.001)
-    {
-        texNormal = float3(0, 0, 1);
-    }
+   
         texNormal = normalize(texNormal * 2.0 - 1.0);
     texNormal = normalize(mul(texNormal, input.TBN));
     float3 normal = texNormal;
     float3 lightDir = normalize(LightDir) ;
-    float diff = max(dot(normal, lightDir), 0.0);
-    float3 diffuse = diff * LightColor ;
+     
+    
+      float diff = max(dot(normal, lightDir), 0.0);
+    float3 diffuse = diff * LightColor ;  
+   
+    
      
     float3 specLightDir = normalize(LightPos - input.FragPos);
     float3 viewDir = normalize(viewPos - input.FragPos);
@@ -319,28 +343,47 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
      
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 16);
     float3 specular = 0.8 * spec * LightColor;
-    float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler,-0.003);
+    float shadow; 
     float shadow1;
     float4 LightSpacePositionFar = mul(float4(input.FragPos, 1), LightSpaceMatFar);
-    if (length(viewPos - input.FragPos)>42)
+    
+    
+    if (receiveShadow == true)
     {
-        shadow1 = ShadowCalculation(LightSpacePositionFar, ShadowMapFarSampler, -0.006);
-    }
-    else
-    {
+        shadow = ShadowCalculation(input.LightSpacePosition, ShadowMapSampler, 0);
+       if (length(viewPos - input.FragPos)>32)
+            {
+        shadow1 = ShadowCalculation(LightSpacePositionFar, ShadowMapFarSampler, 0);
+            }
+        else
+        {
         shadow1 = 0;
+        }  
     }
+    
    
+    float3 result;
     float shadowFinal = clamp(  shadow+shadow1, 0, 1);
-    float3 result = (ambient + (1 - shadowFinal) * (diffuse + specular)) * objectColor;
-    //
-  //  result = mapAO;
+    if (receiveShadow == true)
+    {
+       result = (ambient + (1 - shadowFinal) * (diffuse + specular)) * objectColor;  
+    }
+    else{
+        
+        result = (ambient) * objectColor;
+    }
+    
+   
      
-
-    output.Color = float4(result, 1);
-    output.Color.a *=Alpha;
-   // input.Position.w =0;
-  //  output.Color.a =0;
+        result+=CaculatePointLight(LightPosition1, input.FragPos, normal, viewDir);
+    result += CaculatePointLight(LightPosition2, input.FragPos, normal, viewDir);
+    result += CaculatePointLight(LightPosition3, input.FragPos, normal, viewDir);
+    result += CaculatePointLight(LightPosition4, input.FragPos, normal, viewDir);
+     
+    
+        output.Color = float4(result, 1);
+        output.Color.a *=Alpha;
+   
     
     float3 viewPostrans =  input.FragPos-viewPos;
     float eyeDist = length(viewPostrans);
@@ -354,7 +397,7 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     
     
     
-    output.Color.rgb = lerp(output.Color.rgb,float3(100, 149,  237 )/float3(255,255,255) , fogIntensity);
+    output.Color.rgb = lerp(output.Color.rgb, float3(100, 149, 237) / float3(255, 255, 255), fogIntensity);
    // output.Color = float4(1, 1, 1, 1);
     return output;
 }

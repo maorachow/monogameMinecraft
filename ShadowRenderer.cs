@@ -19,16 +19,19 @@ namespace monogameMinecraft
         public Effect shadowMapShader;
         public ChunkRenderer chunkRenderer;
         public EntityRenderer entityRenderer;
+        public GameTimeManager gameTimeManager;
         public Model zombieModel;
         public Matrix lightView = Matrix.CreateLookAt(new Vector3(100, 100, 100), new Vector3(0, 0, 0),
                        Vector3.Up);
 
-        public Matrix lightProjection = Matrix.CreateOrthographic(200, 200, 0.01f, 150f);
+        public Matrix lightProjection = Matrix.CreateOrthographic(100, 100, 0.01f, 200f);
+        public Matrix lightProjectionFar = Matrix.CreateOrthographic(400, 400, 0.1f, 250f);
         public Matrix lightSpaceMat;
         public Matrix lightSpaceMatFar;
      
         public RenderTargetBinding[] shadowMapBinding;
-        public ShadowRenderer(MinecraftGame game, GraphicsDevice device, Effect shadowMapShader, ChunkRenderer cr, EntityRenderer er) {
+        public float shadowBias;
+        public ShadowRenderer(MinecraftGame game, GraphicsDevice device, Effect shadowMapShader, ChunkRenderer cr, EntityRenderer er,GameTimeManager gtr) {
             this.game = game;
             this.device = device;
             this.shadowMapShader = shadowMapShader;
@@ -40,14 +43,17 @@ namespace monogameMinecraft
             shadowMapBinding[0] = new RenderTargetBinding(shadowMapTarget);
 
             shadowMapBinding[1] = new RenderTargetBinding(shadowMapTargetFar);
-             
+             this.gameTimeManager = gtr;
         }
         public void UpdateLightMatrices(GamePlayer player)
         {
-            lightView = Matrix.CreateLookAt(player.playerPos+ new Vector3(10, 50, 30), player.playerPos, Vector3.UnitY);
-     //    lightSpaceMat = lightView  *lightProjection;
-            lightSpaceMat = GetLightSpaceMatrix(0.1f, 40f, player, new Vector3(10, 50, 30));
-            lightSpaceMatFar = GetLightSpaceMatrix(30f, 300f, player, new Vector3(10, 50, 30));
+            Vector3 lightDir = gameTimeManager.sunDir;
+            lightView = Matrix.CreateLookAt(player.playerPos+ lightDir, player.playerPos, Vector3.UnitY);
+            //    lightSpaceMat = lightView  *lightProjection;
+            
+            lightSpaceMat = lightView*lightProjection;
+            lightSpaceMatFar = lightView *lightProjectionFar;
+        
         }
 
         List<Vector4> GetFrustumCornersWorldSpace( Matrix proj, Matrix view)
@@ -133,6 +139,14 @@ namespace monogameMinecraft
         public void  RenderShadow(GamePlayer player)
         {
             //   UpdateLightMatrices(player);
+            if (gameTimeManager.sunX >= 180f)
+            {
+                shadowBias = 0.006f;
+            }
+            else
+            {
+                shadowBias = -0.006f;
+            }
             UpdateLightMatrices(player);
             BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);
             if (GameOptions.renderShadow)

@@ -119,11 +119,11 @@ RayTraceOutput TraceRay(float2 TexCoord)
     float3 vDir = normalize(reflPosition - CameraPos);
     
     float diff = max(dot(reflNormal, vDir), -1.0);
-    if (diff <= -0.7)
+    if (diff <=- 0.7)
     {
         return (RayTraceOutput) 0;
     }
-     
+    
     float3 reflectDir = normalize(reflect(vDir, normalize(reflNormal)));
     RayTraceOutput output = (RayTraceOutput) 0;
     float3 curPos = 0;
@@ -136,7 +136,7 @@ RayTraceOutput TraceRay(float2 TexCoord)
 
     // Now loop
      
-    for (int i = 0;i <32; i++)
+    for (int i = 0;i <16; i++)
     {
         // Has it hit anything yet
         if (output.Hit == false)
@@ -183,13 +183,13 @@ float4 MainPS(VertexShaderOutput input) : COLOR
                         // Fade at edges
         if (ray.UV.x < 0 || ray.UV.x > 1 || ray.UV.y < 0 || ray.UV.y > 1  )
         {
-            return float4(0, 0, 0, 1);
+            return float4(0, 0, 0, 0);
         }
-        return float4(tex2D(gAlbedo, ray.UV.xy).xyz * tex2D(gRoughness, input.TexCoord.xy).r, 1);
+        return float4(tex2D(gAlbedo, ray.UV.xy).xyz * tex2D(gRoughness, input.TexCoord.xy).r*0.4, 0.1);
     }
     else
     {
-        return float4(0,0,0, 1);
+        return float4(0,0,0, 0);
 
     }
     

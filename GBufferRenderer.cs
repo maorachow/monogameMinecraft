@@ -93,6 +93,19 @@ namespace monogameMinecraft
             quadVertexBuffer=new VertexBuffer(device,typeof(VertexPositionTexture),4,BufferUsage.None);
             quadVertexBuffer.SetData(this.quadVertices);
         }
+        public void Resize(int width,int height,GraphicsDevice device)
+        {
+            this.renderTargetProjectionDepth = new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+            this.renderTargetRoughness = new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+            this.renderTargetAlbedo = new RenderTarget2D(device, width, height, false, SurfaceFormat.HalfVector4, DepthFormat.Depth24);
+            this.renderTargetNormalWS = new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+            this.binding = new RenderTargetBinding[4];
+
+            this.binding[0] = new RenderTargetBinding(this.renderTargetProjectionDepth);
+            this.binding[1] = new RenderTargetBinding(this.renderTargetNormalWS);
+            this.binding[2] = new RenderTargetBinding(this.renderTargetAlbedo);
+            this.binding[3] = new RenderTargetBinding(this.renderTargetRoughness);
+        }
         public void Draw()
         {
             graphicsDevice.SetRenderTargets(binding);

@@ -167,7 +167,7 @@ namespace monogameMinecraft
                 ssaoEffect.Parameters["param_scale"].SetValue(1f);
                 ssaoEffect.Parameters["param_sampleRadius"].SetValue(0.2f);
                 ssaoEffect.Parameters["param_randomSize"].SetValue(0.001f);
-            ssaoEffect.Parameters["param_screenSize"].SetValue(100f);
+            ssaoEffect.Parameters["param_screenSize"].SetValue(30f);
             ssaoEffect.Parameters["g_matInvProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix ));
 
             RenderQuad(ssaoTarget, this.ssaoEffect);

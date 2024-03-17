@@ -1,9 +1,10 @@
 ﻿float4x4 World;
 float4x4 View;
 float4x4 Projection;
- 
+float mixValue;
 float3 CameraPosition;
- 
+float3 lightDir;
+
  
 samplerCUBE SkyBoxSampler = sampler_state
 {
@@ -11,10 +12,18 @@ samplerCUBE SkyBoxSampler = sampler_state
     magfilter = LINEAR;
     minfilter = LINEAR;
     mipfilter = LINEAR;
-    AddressU = Mirror;
-    AddressV = Mirror;
+    AddressU = Clamp;
+    AddressV = Clamp;
 };
- 
+samplerCUBE SkyBoxNightSampler = sampler_state
+{
+    texture = <SkyBoxTextureNight>;
+    magfilter = LINEAR;
+    minfilter = LINEAR;
+    mipfilter = LINEAR;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
 struct VertexShaderInput
 {
     float4 Position : POSITION0;
@@ -42,9 +51,10 @@ VertexShaderOutput VertexShaderFunction(VertexShaderInput input)
  
 float4 PixelShaderFunction(VertexShaderOutput input) : COLOR0
 {
-    return texCUBE(SkyBoxSampler, normalize(input.TextureCoordinate));
+     
+    return lerp(texCUBE(SkyBoxSampler, input.TextureCoordinate.xyz).xyzw, texCUBE(SkyBoxNightSampler, input.TextureCoordinate.xyz).xyzw,mixValue);
+    
 }
- 
 technique Skybox
 {
     pass Pass1

@@ -51,7 +51,7 @@ namespace monogameMinecraft
                 graphicsDevice.Clear(Color.CornflowerBlue);
                 return;
             }
-
+            graphicsDevice.Clear(new Color(0,0,0,0));
             graphicsDevice.SetVertexBuffer(gBufferRenderer.quadVertexBuffer);
             graphicsDevice.Indices = gBufferRenderer.quadIndexBuffer;
             RasterizerState rasterizerState = new RasterizerState();

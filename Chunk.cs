@@ -551,6 +551,7 @@ public struct RandomGenerator3D
 
        public object renderLock=new object();
     public SemaphoreSlim semaphore = new SemaphoreSlim(1);
+    public List<Vector3> lightPoints=new List<Vector3>();
     public int usedByOthersCount = 0;
         public async void InitMap(Vector2Int chunkPos)
         {
@@ -1270,7 +1271,7 @@ public struct RandomGenerator3D
     public void GenerateMesh(List<VertexPositionNormalTangentTexture> OpqVerts, List<VertexPositionNormalTangentTexture> NSVerts,List<VertexPositionNormalTangentTexture> WTVerts,List<ushort> OpqIndices,List<ushort> NSIndices,List<ushort> WTIndices)
     {
 
-     
+        lightPoints.Clear();
         for (int x = 0; x < chunkWidth; x++)
         {
            
@@ -1470,12 +1471,31 @@ public struct RandomGenerator3D
 
                                      if (typeid == 102)
                                      {
-                                         //torch
+                                //torch
 
+                                BuildFaceComplex(new Vector3(x, y, z) + new Vector3(0.4375f, 0f, 0.4375f), new Vector3(0f, 0.625f, 0f), new Vector3(0f, 0f, 0.125f), new Vector2(0.0078125f, 0.0390625f), new Vector2(0.0625f, 0.0625f) + new Vector2(0.02734375f, 0f)+new Vector2(0.0625f,0f), false, NSVerts, 0, NSIndices);
+                                //Right
 
+                                BuildFaceComplex(new Vector3(x, y, z) + new Vector3(0.4375f, 0f, 0.4375f) + new Vector3(0.125f, 0f, 0f), new Vector3(0f, 0.625f, 0f), new Vector3(0f, 0f, 0.125f), new Vector2(0.0078125f, 0.0390625f), new Vector2(0.0625f, 0.0625f) + new Vector2(0.02734375f, 0f) + new Vector2(0.0625f, 0f), true, NSVerts, 0, NSIndices);
 
-                                     }
-                                     else
+                                //Bottom
+
+                                BuildFaceComplex(new Vector3(x, y, z) + new Vector3(0.4375f, 0f, 0.4375f), new Vector3(0f, 0f, 0.125f), new Vector3(0.125f, 0f, 0f), new Vector2(0.0078125f, 0.0078125f), new Vector2(0.0625f, 0.0625f) + new Vector2(0.02734375f, 0f) + new Vector2(0.0625f, 0f), false, NSVerts, 0, NSIndices);
+                                //Top
+
+                                BuildFaceComplex(new Vector3(x, y, z) + new Vector3(0.4375f, 0.625f, 0.4375f), new Vector3(0f, 0f, 0.125f), new Vector3(0.125f, 0f, 0f), new Vector2(0.0078125f, 0.0078125f), new Vector2(0.0625f, 0.0625f) + new Vector2(0.02734375f, 0.03125f) + new Vector2(0.0625f, 0f), true, NSVerts, 0, NSIndices);
+
+                                //Back
+
+                                BuildFaceComplex(new Vector3(x, y, z) + new Vector3(0.4375f, 0f, 0.4375f), new Vector3(0f, 0.625f, 0f), new Vector3(0.125f, 0f, 0f), new Vector2(0.0078125f, 0.0390625f), new Vector2(0.0625f, 0.0625f) + new Vector2(0.02734375f, 0f) + new Vector2(0.0625f, 0f), true, NSVerts, 0, NSIndices);
+                                //Front
+
+                                BuildFaceComplex(new Vector3(x, y, z) + new Vector3(0.4375f, 0f, 0.4375f) + new Vector3(0f, 0f, 0.125f), new Vector3(0f, 0.625f, 0f), new Vector3(0.125f, 0f, 0f), new Vector2(0.0078125f, 0.0390625f), new Vector2(0.0625f, 0.0625f) + new Vector2(0.02734375f, 0f) + new Vector2(0.0625f, 0f), false, NSVerts, 0, NSIndices);
+
+                                lightPoints.Add(new Vector3(x, y, z) + new Vector3(0.5f, 0.725f, 0.5f)+new Vector3(chunkPos.x,0,chunkPos.y));
+
+                            }
+                            else
                                      {
                                          Vector3 randomCrossModelOffset = new Vector3(0f, 0f, 0f);
                                          BuildFace(typeid, new Vector3(x, y, z) + randomCrossModelOffset, new Vector3(0f, 1f, 0f) + randomCrossModelOffset, new Vector3(1f, 0f, 1f) + randomCrossModelOffset, false, NSVerts, 0,NSIndices);
@@ -1664,8 +1684,108 @@ public struct RandomGenerator3D
 
 
     }
+    static void BuildFaceComplex(Vector3 corner, Vector3 up  ,Vector3 right,Vector2 uvWidth, Vector2 uvCorner, bool reversed, List<VertexPositionNormalTangentTexture> verts, int side, List<ushort> indices)
+    {
+        VertexPositionNormalTangentTexture vert00 = new VertexPositionNormalTangentTexture();
+        VertexPositionNormalTangentTexture vert01 = new VertexPositionNormalTangentTexture();
+        VertexPositionNormalTangentTexture vert11 = new VertexPositionNormalTangentTexture();
+        VertexPositionNormalTangentTexture vert10 = new VertexPositionNormalTangentTexture();
+        short index = (short)verts.Count;
+        vert00.Position = corner;
+        vert01.Position = corner + up;
+        vert11.Position = corner + up + right;
+        vert10.Position = corner + right;
+        //    verts.Add(vert0);
+        //    verts.Add(vert1);
+        //    verts.Add(vert2);
+        //     verts.Add(vert3);
+
+       
+
+        //uvCorner.x = (float)(typeid - 1) / 16;
+        
+        vert00.TextureCoordinate = uvCorner;
+        vert01.TextureCoordinate = new Vector2(uvCorner.X, uvCorner.Y + uvWidth.Y);
+        vert11.TextureCoordinate = new Vector2(uvCorner.X + uvWidth.X, uvCorner.Y + uvWidth.Y);
+        vert10.TextureCoordinate = new Vector2(uvCorner.X + uvWidth.X, uvCorner.Y);
+        //    uvs.Add(uvCorner);
+        //    uvs.Add(new Vector2(uvCorner.x, uvCorner.y + uvWidth.y));
+        //    uvs.Add(new Vector2(uvCorner.x + uvWidth.x, uvCorner.y + uvWidth.y));
+        //    uvs.Add(new Vector2(uvCorner.x + uvWidth.x, uvCorner.y));
 
 
+        if (!reversed)
+        {
+
+
+            Vector3 normal = -Vector3.Cross(up, right);
+            Vector3 tangent = -right;
+            vert00.Normal = normal;
+            vert01.Normal = normal;
+            vert11.Normal = normal;
+            vert10.Normal = normal;
+
+            vert00.Tangent = tangent;
+            vert01.Tangent = tangent;
+            vert11.Tangent = tangent;
+            vert10.Tangent = tangent;
+            /*  verts.Add(vert00);
+               verts.Add(vert01);
+               verts.Add(vert11);
+               verts.Add(vert11);
+               verts.Add(vert10);
+               verts.Add(vert00);*/
+            indices.Add((ushort)(index + 0));
+            indices.Add((ushort)(index + 1));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 3));
+            indices.Add((ushort)(index + 0));
+            //    tris.Add(index + 2);
+
+            //   tris.Add(index + 0);
+
+        }
+        else
+        {
+
+            Vector3 normal = Vector3.Cross(up, right);
+            Vector3 tangent = right;
+
+            vert00.Normal = normal;
+            vert01.Normal = normal;
+            vert11.Normal = normal;
+            vert10.Normal = normal;
+
+            vert00.Tangent = tangent;
+            vert01.Tangent = tangent;
+            vert11.Tangent = tangent;
+            vert10.Tangent = tangent;
+            /*    verts.Add(vert01);
+                verts.Add(vert00);
+                verts.Add(vert11);
+                verts.Add(vert10);
+                verts.Add(vert11);
+                verts.Add(vert00);*/
+            //     indices.Add()
+            indices.Add((ushort)(index + 1));
+            indices.Add((ushort)(index + 0));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 3));
+            indices.Add((ushort)(index + 2));
+            indices.Add((ushort)(index + 0));
+
+        }
+
+        verts.Add(vert00);
+        verts.Add(vert01);
+        verts.Add(vert11);
+        verts.Add(vert10);
+
+
+
+    }
+    
     bool CheckNeedBuildFace(int x, int y, int z,bool isThisNS)
     {
        // return true;

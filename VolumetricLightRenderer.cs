@@ -20,20 +20,23 @@ namespace monogameMinecraft
         public GamePlayer player;
         int width;
         int height;
-        public VolumetricLightRenderer(GraphicsDevice device, GBufferRenderer gBufferRenderer,SpriteBatch sb,Effect blendEffect,Effect lightShaftEffect,GamePlayer player)
+        public GameTimeManager gameTimeManager;
+        public EntityRenderer entityRenderer;
+        public VolumetricLightRenderer(GraphicsDevice device, GBufferRenderer gBufferRenderer,SpriteBatch sb, Effect blendEffect, Effect lightShaftEffect, GamePlayer player, GameTimeManager gameTimeManager)
         {
             this.device = device;
             this.gBufferRenderer = gBufferRenderer;
             width = device.PresentationParameters.BackBufferWidth;
             height = device.PresentationParameters.BackBufferHeight;
 
-            blendVolumetricMap=new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
-            renderTargetLum=new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
-            lightShaftTarget = new RenderTarget2D(device, (int)((float)width/2f), (int)((float)height /2f), false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+            blendVolumetricMap = new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+            renderTargetLum = new RenderTarget2D(device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+            lightShaftTarget = new RenderTarget2D(device, (int)((float)width / 2f), (int)((float)height / 2f), false, SurfaceFormat.Vector4, DepthFormat.Depth24);
             this.lightShaftEffect = lightShaftEffect;
             this.spriteBatch = sb;
             this.blendEffect = blendEffect;
-           this.player = player;
+            this.player = player;
+            this.gameTimeManager = gameTimeManager;
         }
         public void LightShafts(
           RenderTarget2D RenderTargetMask,
@@ -68,33 +71,36 @@ namespace monogameMinecraft
             {
                 return;
             }
-            Vector4 vecZero = new Vector4(0, 0, 0, 1);
-            Matrix mat = Matrix.CreateTranslation(new Vector3(player.cam.position.X + 10, player.cam.position.Y + 50, player.cam.position.Z + 30));  
-            Vector4 projectionPos=Vector4.Transform(vecZero, Matrix.Multiply(Matrix.Multiply(mat,player.cam.viewMatrix),player.cam.projectionMatrix));
-            Vector2 screenSpaceLightPos =new Vector2( projectionPos.X / projectionPos.W, projectionPos.Y / projectionPos.W);
-          //  screenSpaceLightPos.Y=-screenSpaceLightPos.Y;
+            Vector4 vecZero = new Vector4(player.cam.position+gameTimeManager.sunDir,1f);
+
+
+            Vector4 projectionPos =Vector4.Transform(vecZero, player.cam.viewMatrix*player.cam.projectionMatrix);
+            Vector2 screenSpaceLightPos =new Vector2( projectionPos.X /projectionPos.W, projectionPos.Y / projectionPos.W);
+            screenSpaceLightPos.Y=-screenSpaceLightPos.Y;
             screenSpaceLightPos *= 0.5f;
             screenSpaceLightPos += new Vector2(0.5f, 0.5f);
-            screenSpaceLightPos.Y=1-screenSpaceLightPos.Y;
-            if (player.cam.Pitch < -10f)
+
+
+            if (gameTimeManager.sunX >= 180f && gameTimeManager.sunX <360f)
             {
-                screenSpaceLightPos = new Vector2(100f, 100f);
+                blendEffect.Parameters["lightColor"].SetValue(Color.CornflowerBlue.ToVector4());
             }
-            device.SetRenderTarget(renderTargetLum);
-            
-            device.Clear(Color.LightYellow);
+            else
+            {
+                blendEffect.Parameters["lightColor"].SetValue(Color.LightYellow.ToVector4());
+            }
             blendEffect.Parameters["maskTex"].SetValue(gBufferRenderer.renderTargetAlbedo);
           //  blendEffect.Parameters["backgroundTex"].SetValue(renderTargetLum);
             blendEffect.Parameters["screenSpaceLightPos"].SetValue(screenSpaceLightPos);
             blendEffect.Parameters["flareWeight"].SetValue(2f);
-            RenderQuad(blendVolumetricMap, blendEffect);
+            RenderQuad(blendVolumetricMap, blendEffect,drawModel:true);
           
-            LightShafts(blendVolumetricMap, screenSpaceLightPos, 1.15f, 0.986f, 0.291f, 0.021f, 100);
+            LightShafts(blendVolumetricMap, screenSpaceLightPos, 1.15f, 0.986f, 0.291f, 0.051f, 100);
         }
 
 
 
-        public void RenderQuad(RenderTarget2D target, Effect quadEffect, bool isPureWhite = false)
+        public void RenderQuad(RenderTarget2D target, Effect quadEffect, bool isPureWhite = false,bool drawModel=false)
         {
             device.SetRenderTarget(target);
 
@@ -105,7 +111,7 @@ namespace monogameMinecraft
                 device.Clear(Color.CornflowerBlue);
                 return;
             }
-
+            device.Clear(new Color(0,0,0,0));   
             device.SetVertexBuffer(gBufferRenderer.quadVertexBuffer);
             device.Indices = gBufferRenderer.quadIndexBuffer;
             RasterizerState rasterizerState = new RasterizerState();
@@ -116,6 +122,8 @@ namespace monogameMinecraft
                 pass.Apply();
                 device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, 4);
             }
+             
+           
             //    graphicsDevice.Clear(Color.White);
             device.SetRenderTarget(null);
             device.Clear(Color.CornflowerBlue);
