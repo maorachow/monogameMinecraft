@@ -203,6 +203,7 @@ namespace monogameMinecraft
                 }
             }
             basicShader.Parameters["receiveReflection"].SetValue(false);
+            basicShader.Parameters["receiveBackLight"].SetValue(false);
             if (gameTimeManager.sunX > 160f||gameTimeManager.sunX<=20f)
             {
                 basicShader.Parameters["receiveShadow"].SetValue(false);
@@ -278,12 +279,15 @@ namespace monogameMinecraft
                     if (c.isReadyToRender == true && c.disposed == false)
                 {
                         basicShader.Parameters["receiveReflection"].SetValue(true);
+                        basicShader.Parameters["receiveBackLight"].SetValue(false);
+
                         if (frustum.Intersects(c.chunkBounds))
                     {
                         RenderSingleChunkWater(c, player);
 
                     }
                         basicShader.Parameters["receiveReflection"].SetValue(false);
+                        basicShader.Parameters["receiveBackLight"].SetValue(true);
                         if ((MathF.Abs(c.chunkPos.x - player.playerPos.X) < (256) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (256)))
                     {
 

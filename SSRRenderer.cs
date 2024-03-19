@@ -30,12 +30,12 @@ namespace monogameMinecraft
         {
             SSREffect.Parameters["ProjectionDepthTex"].SetValue(gBufferRenderer.renderTargetProjectionDepth);
             SSREffect.Parameters["NormalTex"].SetValue(gBufferRenderer.renderTargetNormalWS);
-            SSREffect.Parameters["AlbedoTex"].SetValue(gBufferRenderer.renderTargetAlbedo);
+           SSREffect.Parameters["AlbedoTex"].SetValue(gBufferRenderer.renderTargetAlbedo);
             SSREffect.Parameters["matInverseView"].SetValue(Matrix.Invert(player.cam.viewMatrix));
             SSREffect.Parameters["matInverseProjection"].SetValue(Matrix.Invert(player.cam.projectionMatrix));
             SSREffect.Parameters["matView"].SetValue((player.cam.viewMatrix));
             SSREffect.Parameters["matProjection"].SetValue((player.cam.projectionMatrix));
-            SSREffect.Parameters["CameraPos"].SetValue(player.cam.position);
+           SSREffect.Parameters["CameraPos"].SetValue(player.cam.position);
             SSREffect.Parameters["RoughnessMap"].SetValue(gBufferRenderer.renderTargetRoughness);
             RenderQuad(renderTargetSSR, SSREffect);
         }

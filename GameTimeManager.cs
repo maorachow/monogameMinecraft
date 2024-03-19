@@ -34,7 +34,7 @@ namespace monogameMinecraft
         //0.25f-0.75f night
         public void Update(float deltaTime)
         {
-            dateTime += deltaTime * 0.05f;
+            dateTime += deltaTime * 0.005f;
             if (dateTime >= 1f)
             {
                 dateTime = 0f;

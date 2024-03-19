@@ -874,303 +874,317 @@ public struct RandomGenerator3D
                                     map[pointTransformed.x, pointTransformed.y, pointTransformed.z] = 7;
                                 }
                             }
-              
-                /*   for (int i = 0; i < chunkWidth; i++)
-                   {
-                       for (int j = 0; j < chunkWidth; j++)
-                       {
 
-                           for (int k = chunkHeight - 1; k >= 0; k--)
-                           {
-                           if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] ==4  &&RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i,k,j))>80)
+                for (int i = 0; i < chunkWidth; i++)
+                {
+                    for (int j = 0; j < chunkWidth; j++)
+                    {
+
+                        for (int k = chunkHeight - 1; k >= 0; k--)
+                        {
+                            if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] == 4 && RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)) > 80)
+                            {
+                                map[i, k, j] = 101;
+                            }
+                        }
+                    }
+                }
+                            /*   for (int i = 0; i < chunkWidth; i++)
                                {
-                                   map[i, k, j] = 101;
-                              }
-                               if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] == 4 && map[i, k - 1, j] != 100)
-                               {
-                                   if (treeCount > 0)
+                                   for (int j = 0; j < chunkWidth; j++)
                                    {
-                                                //Debug.WriteLine(RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)));
-                                       if (RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)+new Vector3Int(chunkPos.x,0,chunkPos.y)) > 96)
+
+                                       for (int k = chunkHeight - 1; k >= 0; k--)
                                        {
-
-
-                                           for (int x = -2; x < 3; x++)
+                                       if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] ==4  &&RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i,k,j))>80)
                                            {
-                                               for (int y = 3; y < 5; y++)
+                                               map[i, k, j] = 101;
+                                          }
+                                           if (k > chunkSeaLevel && map[i, k, j] == 0 && map[i, k - 1, j] == 4 && map[i, k - 1, j] != 100)
+                                           {
+                                               if (treeCount > 0)
                                                {
-                                                   for (int z = -2; z < 3; z++)
+                                                            //Debug.WriteLine(RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)));
+                                                   if (RandomGenerator3D.GenerateIntFromVec3(new Vector3Int(i, k, j)+new Vector3Int(chunkPos.x,0,chunkPos.y)) > 96)
                                                    {
-                                                       if (x + i < 0 || x + i >= chunkWidth || z + j < 0 || z + j >= chunkWidth)
+
+
+                                                       for (int x = -2; x < 3; x++)
                                                        {
-
-
-
-                                                           if (x + i < 0)
+                                                           for (int y = 3; y < 5; y++)
                                                            {
-                                                               if (z + j >= 0 && z + j < chunkWidth)
+                                                               for (int z = -2; z < 3; z++)
                                                                {
-                                                                   if (leftChunk != null&&leftChunk.disposed==false)
+                                                                   if (x + i < 0 || x + i >= chunkWidth || z + j < 0 || z + j >= chunkWidth)
                                                                    {
 
-                                                                       leftChunk.additiveMap[chunkWidth + (x + i), y + k, z + j] = 9;
 
-                                                                       isLeftChunkUpdated = true;
 
-                                                                       //    WorldManager.chunkLoadingQueue.UpdatePriority(leftChunk,0);
-                                                                       //         leftChunk.isChunkMapUpdated=true;
+                                                                       if (x + i < 0)
+                                                                       {
+                                                                           if (z + j >= 0 && z + j < chunkWidth)
+                                                                           {
+                                                                               if (leftChunk != null&&leftChunk.disposed==false)
+                                                                               {
+
+                                                                                   leftChunk.additiveMap[chunkWidth + (x + i), y + k, z + j] = 9;
+
+                                                                                   isLeftChunkUpdated = true;
+
+                                                                                   //    WorldManager.chunkLoadingQueue.UpdatePriority(leftChunk,0);
+                                                                                   //         leftChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+                                                                           else if (z + j < 0)
+                                                                           {
+                                                                               if (backLeftChunk != null && backLeftChunk.disposed == false)
+                                                                               {
+                                                                                   backLeftChunk.additiveMap[chunkWidth + (x + i), y + k, chunkWidth - 1 + (z + j)] = 9;
+
+                                                                                   isBackLeftChunkUpdated = true;
+
+                                                                                   //    WorldManage r.chunkLoadingQueue.UpdatePriority(backLeftChunk,0);
+                                                                                   //               backLeftChunk.isChunkMapUpdated=true;
+                                                                               }
+
+                                                                           }
+                                                                           else if (z + j >= chunkWidth)
+                                                                           {
+                                                                               if (frontLeftChunk != null && frontLeftChunk.disposed == false)
+                                                                               {
+                                                                                   frontLeftChunk.additiveMap[chunkWidth + (x + i), y + k, (z + j) - chunkWidth] = 9;
+
+                                                                                   isFrontLeftChunkUpdated = true;
+
+                                                                                   //     WorldManager.chunkLoadingQueue.UpdatePriority(frontLeftChunk,0);
+                                                                                   //                 frontLeftChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+
+                                                                       }
+                                                                       else
+                                                                       if (x + i >= chunkWidth)
+                                                                       {
+                                                                           if (z + j >= 0 && z + j < chunkWidth)
+                                                                           {
+                                                                               if (rightChunk != null && rightChunk.disposed == false)
+                                                                               {
+
+                                                                                   rightChunk.additiveMap[(x + i) - chunkWidth, y + k, z + j] = 9;
+
+                                                                                   isRightChunkUpdated = true;
+
+                                                                                   //   WorldManager.chunkLoadingQueue.UpdatePriority(rightChunk,0);
+                                                                                   //      rightChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+                                                                           else if (z + j < 0)
+                                                                           {
+                                                                               if (backRightChunk != null)
+                                                                               {
+                                                                                   backRightChunk.additiveMap[(x + i) - chunkWidth, y + k, chunkWidth + (z + j)] = 9;
+
+                                                                                   isBackRightChunkUpdated = true;
+
+                                                                                   //    WorldManager.chunkLoadingQueue.UpdatePriority(backRightChunk,0);
+                                                                                   //         backRightChunk.isChunkMapUpdated=true;
+                                                                               }
+
+                                                                           }
+                                                                           else if (z + j >= chunkWidth)
+                                                                           {
+                                                                               if (frontRightChunk != null && frontRightChunk.disposed == false)
+                                                                               {
+                                                                                   frontRightChunk.additiveMap[(x + i) - chunkWidth, y + k, (z + j) - chunkWidth] = 9;
+
+                                                                                   isFrontRightChunkUpdated = true;
+
+                                                                                   //     WorldManager.chunkLoadingQueue.UpdatePriority(frontRightChunk,0);
+                                                                                   //          frontRightChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+                                                                       }
+                                                                       else
+                                                                       if (z + j < 0)
+                                                                       {
+
+                                                                           if (x + i >= 0 && x + i < chunkWidth)
+                                                                           {
+                                                                               if (backChunk != null)
+                                                                               {
+
+                                                                                   backChunk.additiveMap[x + i, y + k, chunkWidth + (z + j)] = 9;
+
+                                                                                   isBackChunkUpdated = true;
+
+                                                                                   //    WorldManager.chunkLoadingQueue.UpdatePriority(backChunk,0);
+                                                                                   //         backChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+                                                                           else if (x + i < 0)
+                                                                           {
+                                                                               if (backLeftChunk != null && backLeftChunk.disposed == false)
+                                                                               {
+                                                                                   backLeftChunk.additiveMap[chunkWidth + (x + i), y + k, chunkWidth - 1 + (z + j)] = 9;
+
+                                                                                   isBackLeftChunkUpdated = true;
+
+                                                                                   //    WorldManager.chunkLoadingQueue.UpdatePriority(backLeftChunk,0);
+                                                                                   //            backLeftChunk.isChunkMapUpdated=true;
+                                                                               }
+
+                                                                           }
+                                                                           else if (x + i >= chunkWidth)
+                                                                           {
+                                                                               if (backRightChunk != null)
+                                                                               {
+                                                                                   backRightChunk.additiveMap[(x + i) - chunkWidth, y + k, chunkWidth - 1 + (z + j)] = 9;
+
+                                                                                   isBackRightChunkUpdated = true;
+
+                                                                                   //       WorldManager.chunkLoadingQueue.UpdatePriority(backRightChunk,0);
+                                                                                   //      backRightChunk.isChunkMapUpdated=true;    
+                                                                               }
+                                                                           }
+
+                                                                       }
+                                                                       else
+                                                                       if (z + j >= chunkWidth)
+                                                                       {
+
+                                                                           if (x + i >= 0 && x + i < chunkWidth)
+                                                                           {
+                                                                               if (frontChunk != null && frontChunk.disposed == false)
+                                                                               {
+
+                                                                                   frontChunk.additiveMap[x + i, y + k, (z + j) - chunkWidth] = 9;
+
+                                                                                   isFrontChunkUpdated = true;
+
+                                                                                   //    WorldManager.chunkLoadingQueue.UpdatePriority(frontChunk,0);
+                                                                                   //   frontChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+                                                                           else if (x + i < 0)
+                                                                           {
+                                                                               if (frontLeftChunk != null && frontLeftChunk.disposed == false)
+                                                                               {
+                                                                                   frontLeftChunk.additiveMap[chunkWidth + (x + i), y + k, (z + j) - chunkWidth] = 9;
+
+                                                                                   isBackLeftChunkUpdated = true;
+
+                                                                                   //        WorldManager.chunkLoadingQueue.UpdatePriority(frontLeftChunk,0);
+                                                                                   //    frontLeftChunk.isChunkMapUpdated=true;
+                                                                               }
+
+                                                                           }
+                                                                           else if (x + i >= chunkWidth)
+                                                                           {
+                                                                               if (frontRightChunk != null && frontRightChunk.disposed == false)
+                                                                               {
+                                                                                   frontRightChunk.additiveMap[(x + i) - chunkWidth, y + k, (z + j) - chunkWidth] = 9;
+
+                                                                                   isFrontRightChunkUpdated = true;
+
+                                                                                   //  WorldManager.chunkLoadingQueue.UpdatePriority(frontRightChunk,0);
+                                                                                   //      frontRightChunk.isChunkMapUpdated=true;
+                                                                               }
+                                                                           }
+                                                                       }
+
+
                                                                    }
-                                                               }
-                                                               else if (z + j < 0)
-                                                               {
-                                                                   if (backLeftChunk != null && backLeftChunk.disposed == false)
+                                                                   else
                                                                    {
-                                                                       backLeftChunk.additiveMap[chunkWidth + (x + i), y + k, chunkWidth - 1 + (z + j)] = 9;
-
-                                                                       isBackLeftChunkUpdated = true;
-
-                                                                       //    WorldManage r.chunkLoadingQueue.UpdatePriority(backLeftChunk,0);
-                                                                       //               backLeftChunk.isChunkMapUpdated=true;
-                                                                   }
-
-                                                               }
-                                                               else if (z + j >= chunkWidth)
-                                                               {
-                                                                   if (frontLeftChunk != null && frontLeftChunk.disposed == false)
-                                                                   {
-                                                                       frontLeftChunk.additiveMap[chunkWidth + (x + i), y + k, (z + j) - chunkWidth] = 9;
-
-                                                                       isFrontLeftChunkUpdated = true;
-
-                                                                       //     WorldManager.chunkLoadingQueue.UpdatePriority(frontLeftChunk,0);
-                                                                       //                 frontLeftChunk.isChunkMapUpdated=true;
+                                                                       map[x + i, y + k, z + j] = 9;
                                                                    }
                                                                }
-
                                                            }
-                                                           else
-                                                           if (x + i >= chunkWidth)
-                                                           {
-                                                               if (z + j >= 0 && z + j < chunkWidth)
-                                                               {
-                                                                   if (rightChunk != null && rightChunk.disposed == false)
-                                                                   {
+                                                       }
+                                                       map[i, k, j] = 7;
+                                                       map[i, k + 1, j] = 7;
+                                                       map[i, k + 2, j] = 7;
+                                                       map[i, k + 3, j] = 7;
+                                                       map[i, k + 4, j] = 7;
+                                                       map[i, k + 5, j] = 9;
+                                                       map[i, k + 6, j] = 9;
 
-                                                                       rightChunk.additiveMap[(x + i) - chunkWidth, y + k, z + j] = 9;
-
-                                                                       isRightChunkUpdated = true;
-
-                                                                       //   WorldManager.chunkLoadingQueue.UpdatePriority(rightChunk,0);
-                                                                       //      rightChunk.isChunkMapUpdated=true;
-                                                                   }
-                                                               }
-                                                               else if (z + j < 0)
-                                                               {
-                                                                   if (backRightChunk != null)
-                                                                   {
-                                                                       backRightChunk.additiveMap[(x + i) - chunkWidth, y + k, chunkWidth + (z + j)] = 9;
-
-                                                                       isBackRightChunkUpdated = true;
-
-                                                                       //    WorldManager.chunkLoadingQueue.UpdatePriority(backRightChunk,0);
-                                                                       //         backRightChunk.isChunkMapUpdated=true;
-                                                                   }
-
-                                                               }
-                                                               else if (z + j >= chunkWidth)
-                                                               {
-                                                                   if (frontRightChunk != null && frontRightChunk.disposed == false)
-                                                                   {
-                                                                       frontRightChunk.additiveMap[(x + i) - chunkWidth, y + k, (z + j) - chunkWidth] = 9;
-
-                                                                       isFrontRightChunkUpdated = true;
-
-                                                                       //     WorldManager.chunkLoadingQueue.UpdatePriority(frontRightChunk,0);
-                                                                       //          frontRightChunk.isChunkMapUpdated=true;
-                                                                   }
-                                                               }
-                                                           }
-                                                           else
-                                                           if (z + j < 0)
-                                                           {
-
-                                                               if (x + i >= 0 && x + i < chunkWidth)
-                                                               {
-                                                                   if (backChunk != null)
-                                                                   {
-
-                                                                       backChunk.additiveMap[x + i, y + k, chunkWidth + (z + j)] = 9;
-
-                                                                       isBackChunkUpdated = true;
-
-                                                                       //    WorldManager.chunkLoadingQueue.UpdatePriority(backChunk,0);
-                                                                       //         backChunk.isChunkMapUpdated=true;
-                                                                   }
-                                                               }
-                                                               else if (x + i < 0)
-                                                               {
-                                                                   if (backLeftChunk != null && backLeftChunk.disposed == false)
-                                                                   {
-                                                                       backLeftChunk.additiveMap[chunkWidth + (x + i), y + k, chunkWidth - 1 + (z + j)] = 9;
-
-                                                                       isBackLeftChunkUpdated = true;
-
-                                                                       //    WorldManager.chunkLoadingQueue.UpdatePriority(backLeftChunk,0);
-                                                                       //            backLeftChunk.isChunkMapUpdated=true;
-                                                                   }
-
-                                                               }
-                                                               else if (x + i >= chunkWidth)
-                                                               {
-                                                                   if (backRightChunk != null)
-                                                                   {
-                                                                       backRightChunk.additiveMap[(x + i) - chunkWidth, y + k, chunkWidth - 1 + (z + j)] = 9;
-
-                                                                       isBackRightChunkUpdated = true;
-
-                                                                       //       WorldManager.chunkLoadingQueue.UpdatePriority(backRightChunk,0);
-                                                                       //      backRightChunk.isChunkMapUpdated=true;    
-                                                                   }
-                                                               }
-
-                                                           }
-                                                           else
-                                                           if (z + j >= chunkWidth)
-                                                           {
-
-                                                               if (x + i >= 0 && x + i < chunkWidth)
-                                                               {
-                                                                   if (frontChunk != null && frontChunk.disposed == false)
-                                                                   {
-
-                                                                       frontChunk.additiveMap[x + i, y + k, (z + j) - chunkWidth] = 9;
-
-                                                                       isFrontChunkUpdated = true;
-
-                                                                       //    WorldManager.chunkLoadingQueue.UpdatePriority(frontChunk,0);
-                                                                       //   frontChunk.isChunkMapUpdated=true;
-                                                                   }
-                                                               }
-                                                               else if (x + i < 0)
-                                                               {
-                                                                   if (frontLeftChunk != null && frontLeftChunk.disposed == false)
-                                                                   {
-                                                                       frontLeftChunk.additiveMap[chunkWidth + (x + i), y + k, (z + j) - chunkWidth] = 9;
-
-                                                                       isBackLeftChunkUpdated = true;
-
-                                                                       //        WorldManager.chunkLoadingQueue.UpdatePriority(frontLeftChunk,0);
-                                                                       //    frontLeftChunk.isChunkMapUpdated=true;
-                                                                   }
-
-                                                               }
-                                                               else if (x + i >= chunkWidth)
-                                                               {
-                                                                   if (frontRightChunk != null && frontRightChunk.disposed == false)
-                                                                   {
-                                                                       frontRightChunk.additiveMap[(x + i) - chunkWidth, y + k, (z + j) - chunkWidth] = 9;
-
-                                                                       isFrontRightChunkUpdated = true;
-
-                                                                       //  WorldManager.chunkLoadingQueue.UpdatePriority(frontRightChunk,0);
-                                                                       //      frontRightChunk.isChunkMapUpdated=true;
-                                                                   }
-                                                               }
-                                                           }
-
+                                                       if (i + 1 < chunkWidth)
+                                                       {
+                                                           map[i + 1, k + 5, j] = 9;
+                                                           map[i + 1, k + 6, j] = 9;
 
                                                        }
                                                        else
                                                        {
-                                                           map[x + i, y + k, z + j] = 9;
+                                                           if (rightChunk != null)
+                                                           {
+                                                               rightChunk.additiveMap[0, k + 5, j] = 9;
+                                                               rightChunk.additiveMap[0, k + 6, j] = 9;
+
+                                                               //      rightChunk.isChunkMapUpdated=true;
+                                                           }
                                                        }
+
+                                                       if (i - 1 >= 0)
+                                                       {
+                                                           map[i - 1, k + 5, j] = 9;
+                                                           map[i - 1, k + 6, j] = 9;
+
+                                                       }
+                                                       else
+                                                       {
+                                                           if (leftChunk != null)
+                                                           {
+                                                               leftChunk.additiveMap[chunkWidth - 1, k + 5, j] = 9;
+                                                               leftChunk.additiveMap[chunkWidth - 1, k + 6, j] = 9;
+
+                                                               // leftChunk.isChunkMapUpdated=true;
+                                                           }
+                                                       }
+                                                       if (j + 1 < chunkWidth)
+                                                       {
+                                                           map[i, k + 5, j + 1] = 9;
+                                                           map[i, k + 6, j + 1] = 9;
+
+                                                       }
+                                                       else
+                                                       {
+                                                           if (frontChunk != null)
+                                                           {
+                                                               frontChunk.additiveMap[i, k + 5, 0] = 9;
+                                                               frontChunk.additiveMap[i, k + 6, 0] = 9;
+
+                                                               //   frontChunk.isChunkMapUpdated=true;
+                                                           }
+                                                       }
+
+                                                       if (j - 1 >= 0)
+                                                       {
+                                                           map[i, k + 5, j - 1] = 9;
+                                                           map[i, k + 6, j - 1] = 9;
+
+                                                       }
+                                                       else
+                                                       {
+                                                           if (backChunk != null)
+                                                           {
+                                                               backChunk.additiveMap[i, k + 5, chunkWidth - 1] = 9;
+                                                               backChunk.additiveMap[i, k + 6, chunkWidth - 1] = 9;
+
+                                                               //  backChunk.isChunkMapUpdated=true;
+                                                           }
+                                                       }
+
+                                                       treeCount--;
                                                    }
                                                }
                                            }
-                                           map[i, k, j] = 7;
-                                           map[i, k + 1, j] = 7;
-                                           map[i, k + 2, j] = 7;
-                                           map[i, k + 3, j] = 7;
-                                           map[i, k + 4, j] = 7;
-                                           map[i, k + 5, j] = 9;
-                                           map[i, k + 6, j] = 9;
 
-                                           if (i + 1 < chunkWidth)
-                                           {
-                                               map[i + 1, k + 5, j] = 9;
-                                               map[i + 1, k + 6, j] = 9;
-
-                                           }
-                                           else
-                                           {
-                                               if (rightChunk != null)
-                                               {
-                                                   rightChunk.additiveMap[0, k + 5, j] = 9;
-                                                   rightChunk.additiveMap[0, k + 6, j] = 9;
-
-                                                   //      rightChunk.isChunkMapUpdated=true;
-                                               }
-                                           }
-
-                                           if (i - 1 >= 0)
-                                           {
-                                               map[i - 1, k + 5, j] = 9;
-                                               map[i - 1, k + 6, j] = 9;
-
-                                           }
-                                           else
-                                           {
-                                               if (leftChunk != null)
-                                               {
-                                                   leftChunk.additiveMap[chunkWidth - 1, k + 5, j] = 9;
-                                                   leftChunk.additiveMap[chunkWidth - 1, k + 6, j] = 9;
-
-                                                   // leftChunk.isChunkMapUpdated=true;
-                                               }
-                                           }
-                                           if (j + 1 < chunkWidth)
-                                           {
-                                               map[i, k + 5, j + 1] = 9;
-                                               map[i, k + 6, j + 1] = 9;
-
-                                           }
-                                           else
-                                           {
-                                               if (frontChunk != null)
-                                               {
-                                                   frontChunk.additiveMap[i, k + 5, 0] = 9;
-                                                   frontChunk.additiveMap[i, k + 6, 0] = 9;
-
-                                                   //   frontChunk.isChunkMapUpdated=true;
-                                               }
-                                           }
-
-                                           if (j - 1 >= 0)
-                                           {
-                                               map[i, k + 5, j - 1] = 9;
-                                               map[i, k + 6, j - 1] = 9;
-
-                                           }
-                                           else
-                                           {
-                                               if (backChunk != null)
-                                               {
-                                                   backChunk.additiveMap[i, k + 5, chunkWidth - 1] = 9;
-                                                   backChunk.additiveMap[i, k + 6, chunkWidth - 1] = 9;
-
-                                                   //  backChunk.isChunkMapUpdated=true;
-                                               }
-                                           }
-
-                                           treeCount--;
                                        }
                                    }
-                               }
-
-                           }
-                       }
-                 } */
-                for (int i = 0; i < chunkWidth; i++)
+                             } */
+                            for (int i = 0; i < chunkWidth; i++)
                     {
                         for (int j = 0; j < chunkWidth; j++)
                         {

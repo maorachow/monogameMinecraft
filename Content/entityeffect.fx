@@ -8,6 +8,7 @@ float3 viewPos;
  
  
 texture TextureE;
+bool receiveShadow;
 float3 DiffuseColor = float3(1, 1, 1);
  
 sampler2D textureSampler = sampler_state
@@ -158,7 +159,15 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float shadow = ShadowCalculation(input.LightSpacePosition,ShadowMapSampler);
     
     float shadowFinal = clamp(shadow, 0, 1);
-    output.Color.rgb *= (0.5 + (shadowFinal * 0.5));
+    if (receiveShadow == true)
+    {
+       output.Color.rgb *= (0.5 + (shadowFinal * 0.5)); 
+    }
+    else
+    {
+        output.Color.rgb *= (0.5);
+    }
+    
  
  
     return output;

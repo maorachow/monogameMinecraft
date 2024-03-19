@@ -15,6 +15,7 @@ float3 LightColor = float3(1, 1, 1);
 bool renderShadow;
 bool receiveAO;
 float shadowBias;
+bool receiveBackLight = false;
 bool receiveReflection;
 
 bool receiveShadow;
@@ -251,18 +252,22 @@ float3 CaculatePointLight(float3 lightPos,float3 fragPos,float3 normal,float3 vi
         return float3(0, 0, 0);
     }
     float3 lightDir = normalize(lightPos - fragPos);
-    // 漫反射着色
+    
     float diff = max(dot(normal, lightDir), 0.0);
-    // 镜面光着色
+    float diffBack = max(dot(normal, -lightDir), 0) * 0.3;
+    if (receiveBackLight)
+    {
+        diff += diffBack;
+    }
     float3 reflectDir = reflect(-lightDir, normal);
     float3 halfwayDir = normalize(lightDir + viewDir);
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 128);
-    // 衰减
+    
     float distance = length(lightPos - fragPos);
-    float attenuation = 1.0 / (10 * (distance * distance));
-    // 合并结果
+    float attenuation = 1.0 / (5 * (distance * distance));
+    
     float3 ambient = 0;
-    float3 diffuse = diff * float3(255 / 255, 255 / 255, 224.0 / 255.0);
+    float3 diffuse = diff * float3(255 / 255, 255 / 255, 150.0 / 255.0);
     float3 specular = spec;
     ambient *= attenuation;
     diffuse *= attenuation;
@@ -326,19 +331,26 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
   
     float3 texNormal = tex2D(normalSampler, texCoords).rgb;
    
-        texNormal = normalize(texNormal * 2.0 - 1.0);
+    texNormal = normalize(texNormal * 2.0 - 1.0);
     texNormal = normalize(mul(texNormal, input.TBN));
     float3 normal = texNormal;
     float3 lightDir = normalize(LightDir) ;
      
+    float3 viewDir = normalize(viewPos - input.FragPos);
     
+   
       float diff = max(dot(normal, lightDir), 0.0);
+    float diffBack = max(dot(normal, -lightDir), 0)*0.3;
+    if (receiveBackLight)
+    {
+        diff += diffBack;
+    }
     float3 diffuse = diff * LightColor ;  
    
     
      
     float3 specLightDir = normalize(LightPos - input.FragPos);
-    float3 viewDir = normalize(viewPos - input.FragPos);
+ 
     float3 halfwayDir = normalize(lightDir + viewDir);
      
     float spec = pow(max(dot(normal, halfwayDir), 0.0), 16);
@@ -389,9 +401,9 @@ PixelShaderOutput PixelShaderFunction(VertexShaderOutput input)
     float eyeDist = length(viewPostrans);
     float fogIntensity = max((eyeDist - fogStart),0) / (fogRange - fogStart);
      fogIntensity = clamp(fogIntensity, 0,1);
-   if (output.Color.r < 0.00001 && output.Color.g < 0.00001 && output.Color.b < 0.00001)
+    if (tex2D(textureSampler, texCoords).a<=0.01)
     {
-        output.Color.a = 0;
+        discard;
     }
   //  output.Color.a = tex2D(textureSampler, texCoords).a;
     

@@ -22,7 +22,8 @@ namespace monogameMinecraft
         public Texture2D zombieTex;
         public static MinecraftGame game;
         public ShadowRenderer shadowRenderer;
-        public EntityRenderer(MinecraftGame game, GraphicsDevice device, GamePlayer player, Effect shader, Model model, Texture2D zombieTex, Model zombieModelRef, Effect shadowmapShader, ShadowRenderer sr)
+        public GameTimeManager gameTimeManager;
+        public EntityRenderer(MinecraftGame game, GraphicsDevice device, GamePlayer player, Effect shader, Model model, Texture2D zombieTex, Model zombieModelRef, Effect shadowmapShader, ShadowRenderer sr,GameTimeManager gameTimeManager)
         {
             this.device = device;
             basicShader = shader;
@@ -33,7 +34,7 @@ namespace monogameMinecraft
             this.zombieTex = zombieTex;
             this.shadowRenderer = sr;
             EntityRenderer.game = game;
-
+            this.gameTimeManager = gameTimeManager;
 
         }
 
@@ -45,10 +46,17 @@ namespace monogameMinecraft
             basicShader.Parameters["TextureE"].SetValue(zombieTex);
             basicShader.Parameters["ShadowMapC"].SetValue(shadowRenderer.shadowMapTarget);
             basicShader.Parameters["LightSpaceMat"].SetValue(shadowRenderer.lightSpaceMat);
-  //          basicShader.Parameters["LightSpaceMatFar"].SetValue(shadowRenderer.lightSpaceMatFar);
-    //        basicShader.Parameters["ShadowMapCFar"].SetValue(shadowRenderer.shadowMapTargetFar);
+            //          basicShader.Parameters["LightSpaceMatFar"].SetValue(shadowRenderer.lightSpaceMatFar);
+            //        basicShader.Parameters["ShadowMapCFar"].SetValue(shadowRenderer.shadowMapTargetFar);
             //      zombieModel.Bones["head"].Transform = Matrix.CreateScale(0.5f);
-
+            if (gameTimeManager.sunX > 160f || gameTimeManager.sunX <= 20f)
+            {
+                basicShader.Parameters["receiveShadow"].SetValue(false);
+            }
+            else
+            {
+                basicShader.Parameters["receiveShadow"].SetValue(true);
+            }
             BoundingFrustum frustum = new BoundingFrustum(game.gamePlayer.cam.viewMatrix * game.gamePlayer.cam.projectionMatrix);  
             foreach (var entity in EntityBeh.worldEntities)
             {

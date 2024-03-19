@@ -53,7 +53,7 @@ namespace monogameMinecraft
         public VolumetricLightRenderer volumetricLightRenderer;
         public GameTimeManager gameTimeManager;
         public PointLightUpdater pointLightUpdater;
-        public bool renderDebug=false;
+        public bool renderDebug=true;
         public MinecraftGame()
         {
             _graphics = new GraphicsDeviceManager(this);
@@ -148,7 +148,7 @@ namespace monogameMinecraft
             gBufferRenderer=new GBufferRenderer(this.GraphicsDevice, gBufferEffect,gamePlayer,chunkRenderer);
             ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferRenderer, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
             ssrRenderer = new SSRRenderer(GraphicsDevice, gamePlayer, gBufferRenderer, ssrEffect);
-            entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null);
+            entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null,gameTimeManager);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer,gameTimeManager);
             chunkRenderer.shadowRenderer = shadowRenderer;
             chunkRenderer.SSAORenderer = ssaoRenderer;

@@ -126,23 +126,23 @@ RayTraceOutput TraceRay(float2 TexCoord)
     
     float3 reflectDir = normalize(reflect(vDir, normalize(reflNormal)));
     RayTraceOutput output = (RayTraceOutput) 0;
-    float3 curPos = 0;
+    float3 curPos = reflPosition;
  
     // The Current UV
     float3 curUV = 0;
  
     // The Current Length
-    float curLength = 1;
+    float curLength = 0.5;
 
     // Now loop
      
-    for (int i = 0;i <16; i++)
+    for (int i = 0;i <64; i++)
     {
         // Has it hit anything yet
         if (output.Hit == false)
         {
             // Update the Current Position of the Ray
-            curPos = reflPosition + reflectDir * curLength;
+            curPos = reflPosition+reflectDir * curLength;
             // Get the UV Coordinates of the current Ray
             curUV = GetUVFromPosition(curPos);
             // The Depth of the Current Pixel
@@ -174,8 +174,8 @@ RayTraceOutput TraceRay(float2 TexCoord)
 }
 float4 MainPS(VertexShaderOutput input) : COLOR
 {
-
-    
+ 
+   //return float4((input.TexCoord).xy, 1, 1);
     RayTraceOutput ray = TraceRay(input.TexCoord);
     float amount = 0.1;
     if (ray.Hit == true)
