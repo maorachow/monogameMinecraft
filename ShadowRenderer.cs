@@ -23,7 +23,8 @@ namespace monogameMinecraft
         public Model zombieModel;
         public Matrix lightView = Matrix.CreateLookAt(new Vector3(100, 100, 100), new Vector3(0, 0, 0),
                        Vector3.Up);
-
+        public Matrix lightViewFar = Matrix.CreateLookAt(new Vector3(100, 100, 100), new Vector3(0, 0, 0),
+                     Vector3.Up);
         public Matrix lightProjection = Matrix.CreateOrthographic(100, 100, 0.01f, 200f);
         public Matrix lightProjectionFar = Matrix.CreateOrthographic(400, 400, 0.1f, 250f);
         public Matrix lightSpaceMat;
@@ -48,11 +49,13 @@ namespace monogameMinecraft
         public void UpdateLightMatrices(GamePlayer player)
         {
             Vector3 lightDir = gameTimeManager.sunDir;
+            Vector3 lightDirFar = gameTimeManager.sunDir*2f;
             lightView = Matrix.CreateLookAt(player.playerPos+ lightDir, player.playerPos, Vector3.UnitY);
+            lightViewFar = Matrix.CreateLookAt(player.playerPos + lightDirFar, player.playerPos, Vector3.UnitY);
             //    lightSpaceMat = lightView  *lightProjection;
-            
+
             lightSpaceMat = lightView*lightProjection;
-            lightSpaceMatFar = lightView *lightProjectionFar;
+            lightSpaceMatFar = lightViewFar * lightProjectionFar;
         
         }
 

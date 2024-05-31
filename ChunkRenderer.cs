@@ -19,6 +19,7 @@ namespace monogameMinecraft
         public GraphicsDevice device;
       //  public AlphaTestEffect basicNSShader;
         public Effect basicShader;
+        public Effect deferredShader;
         public Texture2D atlas;
         public Texture2D atlasNormal;
         public Texture2D atlasDepth;
@@ -31,9 +32,12 @@ namespace monogameMinecraft
         public PointLightUpdater lightUpdater;
         public void SetTexture(Texture2D tex,Texture2D texNormal,Texture2D textureDepth)
         {
-            atlas= tex;
-            atlasNormal= texNormal;
+            
+            atlas = tex;
+            
+            atlasNormal = texNormal;
             this.atlasDepth= textureDepth;
+            
             basicShader.Parameters["Texture"].SetValue(atlas);
             basicShader.Parameters["TextureNormal"].SetValue(atlasNormal);
             basicShader.Parameters["TextureDepth"].SetValue(atlasDepth);
@@ -55,6 +59,8 @@ namespace monogameMinecraft
  
         public void RenderAllChunksGBuffer(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player,Effect gBufferEffect)
         {
+
+            gBufferEffect.Parameters["blockTex"].SetValue(atlas);
             gBufferEffect.Parameters["View"].SetValue(player.cam.viewMatrix);
             gBufferEffect.Parameters["Projection"].SetValue(player.cam.projectionMatrix);
             BoundingFrustum frustum = new BoundingFrustum(player.cam.viewMatrix * player.cam.projectionMatrix);
@@ -68,20 +74,18 @@ namespace monogameMinecraft
 
                 if (c.isReadyToRender == true && c.disposed == false)
                 {
-                    if(MathF.Abs(c.chunkPos.x - player.playerPos.X) < (128) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (128))
-                    {
+                  
                     if (frustum.Intersects(c.chunkBounds))
                     {
                         RenderSingleChunkGBuffer(c, player,gBufferEffect);
 
                     }
-                    }
+                    
                    
 
 
                 }
             }
-
             foreach (var chunk in RenderingChunks)
             {
                 Chunk c = chunk.Value;
@@ -92,14 +96,35 @@ namespace monogameMinecraft
 
                 if (c.isReadyToRender == true && c.disposed == false)
                 {
-                    if (MathF.Abs(c.chunkPos.x - player.playerPos.X) < (128) && MathF.Abs(c.chunkPos.y - player.playerPos.Z) < (128))
-                    {
+                    
+                        if (frustum.Intersects(c.chunkBounds))
+                        {
+                            RenderSingleChunkGBufferAlphaTest(c, player, gBufferEffect);
+
+                        }
+                    
+
+
+
+                }
+            }
+            foreach (var chunk in RenderingChunks)
+            {
+                Chunk c = chunk.Value;
+                if (c == null)
+                {
+                    continue;
+                }
+
+                if (c.isReadyToRender == true && c.disposed == false)
+                {
+                    
                         if (frustum.Intersects(c.chunkBounds))
                         {
                             RenderSingleChunkGBufferWater(c, player, gBufferEffect);
 
                         }
-                    }
+                    
 
 
 
@@ -110,8 +135,8 @@ namespace monogameMinecraft
         {
             Matrix world = (Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
             gBufferEffect.Parameters["World"].SetValue(world);
-            gBufferEffect.Parameters["TransposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(world*player.cam.viewMatrix)));
-            gBufferEffect.Parameters["roughness"].SetValue(0.0f);
+         //   gBufferEffect.Parameters["TransposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(world*player.cam.viewMatrix)));
+          //  gBufferEffect.Parameters["roughness"].SetValue(0.0f);
             device.SetVertexBuffer(c.VBOpq);
 
             device.Indices = c.IBOpq;
@@ -128,8 +153,8 @@ namespace monogameMinecraft
         {
             Matrix world = (Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
             gBufferEffect.Parameters["World"].SetValue(world);
-            gBufferEffect.Parameters["TransposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(world * player.cam.viewMatrix)));
-            gBufferEffect.Parameters["roughness"].SetValue(1f);
+        //    gBufferEffect.Parameters["TransposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(world * player.cam.viewMatrix)));
+         //   gBufferEffect.Parameters["roughness"].SetValue(1f);
             device.SetVertexBuffer(c.VBWT);
 
             device.Indices = c.IBWT;
@@ -143,6 +168,28 @@ namespace monogameMinecraft
             }
             }
            
+        }
+
+
+        public void RenderSingleChunkGBufferAlphaTest(Chunk c, GamePlayer player, Effect gBufferEffect)
+        {
+            Matrix world = (Matrix.CreateTranslation(new Vector3(c.chunkPos.x, 0, c.chunkPos.y)));
+            gBufferEffect.Parameters["World"].SetValue(world);
+          //  gBufferEffect.Parameters["TransposeInverseView"].SetValue(Matrix.Transpose(Matrix.Invert(world * player.cam.viewMatrix)));
+         //   gBufferEffect.Parameters["roughness"].SetValue(0f);
+            device.SetVertexBuffer(c.VBNS);
+
+            device.Indices = c.IBNS;
+            if (c.indicesNSArray.Length > 0)
+            {
+                foreach (EffectPass pass in gBufferEffect.CurrentTechnique.Passes)
+                {
+                    pass.Apply();
+                    device.DrawIndexedPrimitives(PrimitiveType.TriangleList, 0, 0, c.indicesNSArray.Length / 3);
+
+                }
+            }
+
         }
         public void RenderAllChunksOpq(ConcurrentDictionary<Vector2Int, Chunk> RenderingChunks, GamePlayer player)
         {

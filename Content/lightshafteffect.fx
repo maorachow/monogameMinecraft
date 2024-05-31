@@ -53,8 +53,8 @@ float4 PixelShaderFunction(PS_IN input) : SV_TARGET0
     float IlluminationDecay = 1.0;
     float3 Sample;
 	// Evaluate summation from Equation 3 ( see https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch13.html) NUM_SAMPLES iterations.
-    [unroll]
-    for (int i = 0; i < 32; ++i)
+     
+    for (int i = 0; i < 100; ++i)
     {
 		// Step sample location along ray.
         TexCoord -= DeltaTexCoord;

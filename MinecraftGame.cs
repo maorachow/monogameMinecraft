@@ -13,7 +13,7 @@ using System.Threading;
 using System.Collections.Generic;
 using System.Net.Security;
 //using System.Numerics;
-
+using Microsoft.Xna.Framework.Content;
 namespace monogameMinecraft
 {
     public enum GameStatus
@@ -32,9 +32,12 @@ namespace monogameMinecraft
         public Effect entityEffect;
         public Effect ssaoEffect;
         public Effect gBufferEffect;
+        public Effect gBufferEntityEffect;
         public Effect skyboxEffect;
         public Effect lightShaftEffect;
         public Effect ssrEffect;
+        public Effect deferredBlockEffect;
+        public Effect contactShadowEffect;
         public AlphaTestEffect chunkNSEffect;
         public GamePlayer gamePlayer;
         public ChunkRenderer chunkRenderer;
@@ -53,6 +56,9 @@ namespace monogameMinecraft
         public VolumetricLightRenderer volumetricLightRenderer;
         public GameTimeManager gameTimeManager;
         public PointLightUpdater pointLightUpdater;
+        public ContactShadowRenderer contactShadowRenderer;
+
+        DeferredShadingRenderer deferredShadingRenderer;
         public bool renderDebug=true;
         public MinecraftGame()
         {
@@ -98,11 +104,12 @@ namespace monogameMinecraft
               
                        
 
-                           ssaoRenderer.ssaoTarget = new RenderTarget2D(ssaoRenderer.graphicsDevice, width, height, false, SurfaceFormat.Color, DepthFormat.Depth24);
+                           ssaoRenderer.ssaoTarget = new RenderTarget2D(ssaoRenderer.graphicsDevice, width / 2, height / 2, false, SurfaceFormat.Color, DepthFormat.Depth24);
                            volumetricLightRenderer.blendVolumetricMap = new RenderTarget2D(volumetricLightRenderer.device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
                            volumetricLightRenderer.renderTargetLum = new RenderTarget2D(volumetricLightRenderer.device, width, height, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
-                           ssrRenderer.renderTargetSSR=new RenderTarget2D(ssrRenderer.graphicsDevice, width/2,height/2,false,SurfaceFormat.Vector4, DepthFormat.Depth24);
-                           volumetricLightRenderer.lightShaftTarget = new RenderTarget2D(GraphicsDevice, (int)((float)width), (int)((float)height), false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+                           ssrRenderer.renderTargetSSR=new RenderTarget2D(GraphicsDevice, width / 2, height / 2, false,SurfaceFormat.Color, DepthFormat.Depth24);
+                           volumetricLightRenderer.lightShaftTarget = new RenderTarget2D(GraphicsDevice, (int)((float)width) / 2, (int)((float)height) / 2, false, SurfaceFormat.Vector4, DepthFormat.Depth24);
+                            contactShadowRenderer.contactShadowRenderTarget=new RenderTarget2D(contactShadowRenderer.device, width/2, height / 2, false,SurfaceFormat.Color, DepthFormat.Depth24);
                     float aspectRatio = GraphicsDevice.Viewport.Width / (float)GraphicsDevice.Viewport.Height;
                     gamePlayer.cam.aspectRatio= aspectRatio;
                     gamePlayer.cam.projectionMatrix = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(90), aspectRatio, 0.1f, 1000f);
@@ -137,19 +144,24 @@ namespace monogameMinecraft
             entityEffect = Content.Load<Effect>("entityeffect");
             //  chunkEffect = Content.Load<Effect>("blockeffect");
             gBufferEffect = Content.Load<Effect>("gbuffereffect");
+            gBufferEntityEffect = Content.Load<Effect>("gbufferentityeffect");
             ssaoEffect = Content.Load<Effect>("ssaoeffect");
             lightShaftEffect = Content.Load<Effect>("lightshafteffect");
             skyboxEffect = Content.Load<Effect>("skyboxeffect");
             ssrEffect = Content.Load<Effect>("ssreffect");
+            deferredBlockEffect = Content.Load<Effect>("deferredblockeffect");
+            contactShadowEffect = Content.Load<Effect>("contactshadoweffect");
             gameTimeManager = new GameTimeManager(gamePlayer);
             chunkRenderer = new ChunkRenderer(this, GraphicsDevice, chunkSolidEffect,null, gameTimeManager);
             pointLightUpdater = new PointLightUpdater(chunkSolidEffect, gamePlayer);
             chunkRenderer.SetTexture(terrainTex,terrainNormal, terrainDepth);
-            gBufferRenderer=new GBufferRenderer(this.GraphicsDevice, gBufferEffect,gamePlayer,chunkRenderer);
-            ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferRenderer, chunkRenderer, this.GraphicsDevice, gamePlayer,Content.Load<Texture2D>("randomnormal"));
-            ssrRenderer = new SSRRenderer(GraphicsDevice, gamePlayer, gBufferRenderer, ssrEffect);
+           
+          
             entityRenderer = new EntityRenderer(this, GraphicsDevice, gamePlayer, entityEffect, Content.Load<Model>("zombie.geo"),Content.Load<Texture2D>("zombie"),Content.Load<Model>("zombiemodelref"), chunkShadowEffect, null,gameTimeManager);
             shadowRenderer = new ShadowRenderer(this, GraphicsDevice,chunkShadowEffect, chunkRenderer, entityRenderer,gameTimeManager);
+            gBufferRenderer = new GBufferRenderer(this.GraphicsDevice, gBufferEffect, gBufferEntityEffect, gamePlayer, chunkRenderer, entityRenderer);
+            ssaoRenderer = new SSAORenderer(ssaoEffect, gBufferRenderer, chunkRenderer, this.GraphicsDevice, gamePlayer, Content.Load<Texture2D>("randomnormal"));
+            ssrRenderer = new SSRRenderer(GraphicsDevice, gamePlayer, gBufferRenderer, ssrEffect);
             chunkRenderer.shadowRenderer = shadowRenderer;
             chunkRenderer.SSAORenderer = ssaoRenderer;
             entityRenderer.shadowRenderer = shadowRenderer;
@@ -161,6 +173,8 @@ namespace monogameMinecraft
             volumetricLightRenderer = new VolumetricLightRenderer(GraphicsDevice, gBufferRenderer, _spriteBatch,Content.Load<Effect>("volumetricmaskblend"), lightShaftEffect,gamePlayer, gameTimeManager);
             chunkRenderer.SSRRenderer = ssrRenderer;
             volumetricLightRenderer.entityRenderer = entityRenderer;
+            contactShadowRenderer = new ContactShadowRenderer(GraphicsDevice, contactShadowEffect, gBufferRenderer, gameTimeManager, gamePlayer);
+            deferredShadingRenderer = new DeferredShadingRenderer(GraphicsDevice, deferredBlockEffect, shadowRenderer, ssaoRenderer, ssrRenderer, gameTimeManager, pointLightUpdater, gBufferRenderer,contactShadowRenderer);
             GamePlayer.ReadPlayerData(gamePlayer,this);
             EntityBeh.InitEntityList();
           //  rasterizerState.CullMode = CullMode.None;
@@ -368,17 +382,19 @@ namespace monogameMinecraft
              ssaoRenderer.Draw();
             volumetricLightRenderer.Draw();
             ssrRenderer.Draw();
+            contactShadowRenderer.Draw();
             skyboxRenderer.Draw();
-
+            
             //   GraphicsDevice.RasterizerState = rasterizerState1;
             pointLightUpdater.UpdatePointLight();
-            chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
+    //        chunkRenderer.RenderAllChunksOpq(ChunkManager.chunks, gamePlayer);
           
             entityRenderer.Draw();
            
-            chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
-           
+    //        chunkRenderer.RenderAllChunksTransparent(ChunkManager.chunks, gamePlayer);
 
+            deferredShadingRenderer.Draw(gamePlayer);
+            deferredShadingRenderer.FinalBlend(_spriteBatch, volumetricLightRenderer, GraphicsDevice);
             GraphicsDevice.DepthStencilState = DepthStencilState.None; 
             
         }
@@ -395,9 +411,9 @@ namespace monogameMinecraft
                     gamePlayer.cam.updateCameraVectors();
                    
                     RenderWorld();
-                    _spriteBatch.Begin(blendState:BlendState.Additive);
-                    _spriteBatch.Draw(volumetricLightRenderer.lightShaftTarget, new Rectangle(0, 0, GraphicsDevice.PresentationParameters.BackBufferWidth , GraphicsDevice.PresentationParameters.BackBufferHeight), Color.White);
-                    _spriteBatch.End();
+            //        _spriteBatch.Begin(blendState:BlendState.Additive);
+            //        _spriteBatch.Draw(volumetricLightRenderer.lightShaftTarget, new Rectangle(0, 0, GraphicsDevice.PresentationParameters.BackBufferWidth , GraphicsDevice.PresentationParameters.BackBufferHeight), Color.White);
+             //       _spriteBatch.End();
                    
                     _spriteBatch.Begin(samplerState: SamplerState.PointWrap);
 
@@ -412,11 +428,12 @@ namespace monogameMinecraft
                         _spriteBatch.Draw(shadowRenderer.shadowMapTarget, new Rectangle(200, 0, 200, 200), Color.White);
                         _spriteBatch.Draw(shadowRenderer.shadowMapTargetFar, new Rectangle(200, 200, 200, 200), Color.White);
 
-                        _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(400, 0, 200, 200), Color.White);
+                        _spriteBatch.Draw(ssaoRenderer.ssaoTarget, new Rectangle(800, 800, 400, 400), Color.White);
+                        _spriteBatch.Draw(contactShadowRenderer.contactShadowRenderTarget, new Rectangle(1200, 800, 400, 400), Color.White);
                         _spriteBatch.Draw(gBufferRenderer.renderTargetProjectionDepth, new Rectangle(400, 200, 200, 200), Color.White);
                         _spriteBatch.Draw(gBufferRenderer.renderTargetNormalWS, new Rectangle(600, 200, 200, 200), Color.White);
                         _spriteBatch.Draw(gBufferRenderer.renderTargetAlbedo, new Rectangle(200, 600, 200, 200), Color.White);
-                        _spriteBatch.Draw(gBufferRenderer.renderTargetRoughness, new Rectangle(400, 800, 200, 200), Color.White);
+                        _spriteBatch.Draw(gBufferRenderer.renderTargetPositionWS, new Rectangle(400, 800, 200, 200), Color.White);
                          _spriteBatch.Draw(volumetricLightRenderer.blendVolumetricMap, new Rectangle(800, 200, 200, 200), Color.White);
                          _spriteBatch.Draw(volumetricLightRenderer.lightShaftTarget, new Rectangle(800, 400, 200, 200), Color.White);
 

@@ -4,8 +4,9 @@ matrix World;
 matrix View;
 matrix Projection;
 float3x3 TransposeInverseView;
-int renderTarget;
+ 
 float roughness;
+ 
 sampler textureSampler = sampler_state
 {
     Texture = (blockTex);
@@ -13,7 +14,7 @@ sampler textureSampler = sampler_state
     AddressV = CLAMP;
     MagFilter = POINT;
     MinFilter = POINT;
-    Mipfilter = NONE;
+    Mipfilter = Linear;
 };
 struct VertexShaderInput
 {
@@ -29,9 +30,10 @@ struct VertexShaderOutput
     float4 PositionV : TEXCOORD1;
     
     float4 PositionP : TEXCOORD4;
+    float3 PositionWS : TEXCOORD5;
     float3 Normal : TEXCOORD2;
     float3 Tangent : TEXCOORD3;
-    float3 NormalWS : TEXCOORD5;
+ 
     float2 TexCoords : TEXCOORD11;
 };
 struct PixelShaderOutput
@@ -43,7 +45,7 @@ struct PixelShaderOutput
     
     float4 NormalWS : COLOR1;
     float4 Albedo : COLOR2;
-    float4 Roughness : COLOR3;
+    float4 PositionWS : COLOR3;
 };
 
  
@@ -60,10 +62,10 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
     output.PositionP = mul(viewPosition, Projection);
     float3x3 worldView =   World*View;
     
-    output.Tangent = mul(input.Tangent, TransposeInverseView);
+    output.Tangent = input.Tangent;
     
-    output.Normal = mul(input.Normal, TransposeInverseView);
-    output.NormalWS = input.Normal;
+    output.Normal =input.Normal;
+    output.PositionWS = worldPosition.xyz/worldPosition.w;
     output.TexCoords = input.TexureCoordinate;
 	return output;
 }
@@ -71,7 +73,7 @@ VertexShaderOutput MainVS(in VertexShaderInput input)
 float LinearizeDepth(float depth)
 {
     float NEAR = 0.1;
-     float FAR = 50.0f;
+     float FAR = 100.0f;
     float z = depth * 2.0 - 1.0; 
     return (2.0 * NEAR * FAR) / (FAR + NEAR - z * (FAR - NEAR));
 }
@@ -80,15 +82,25 @@ PixelShaderOutput MainPS(VertexShaderOutput input)
     PixelShaderOutput psOut = (PixelShaderOutput) 0;
     
       
-    float3 position = input.PositionP.xyz / input.PositionP.w;
-    
-    psOut.ProjectionDepth.rgb = position.z;
+    if (tex2D(textureSampler, input.TexCoords).a < 0.1)
+    {
+        discard;
+    }
     psOut.ProjectionDepth.a = 1;
+    float z = -input.PositionV.z;
+    float packedZ = ((1 / z) - 1 / 0.1) / (1 / 500 - 1 / 0.1);
+    float packedZ1 = z / 50.0;
+    psOut.ProjectionDepth.rgb = packedZ;
+    
     psOut.NormalWS = float4(normalize(input.Normal) * 0.5 + 0.5, 1);
     psOut.Albedo = tex2D(textureSampler,input.TexCoords);
-    psOut.NormalWS = float4(normalize(input.NormalWS) * 0.5 + 0.5, 1);
-    psOut.Roughness.rgb = roughness;
-    psOut.Roughness.a = 1;
+    
+    psOut.Albedo.a = 1;
+
+    
+    
+    psOut.PositionWS.rgb = input.PositionWS.xyz;
+    psOut.PositionWS.a = 1;
     
     return psOut;
 
